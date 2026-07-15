@@ -11,14 +11,14 @@ class OffersPresentedProvider extends ChangeNotifier {
   bool isLoading = false;
   String? errorMessage;
 
-  // ── Fetch all submitted offers — status comes from DB with each offer ─────
-  Future<void> fetchSubmittedOffers() async {
+  Future<void> SubmittedOffers() async {
     isLoading = true;
     errorMessage = null;
     notifyListeners();
 
     try {
-      offers = await _service.getSubmittedOffers();
+      final data = await _service.getSubmittedOffers();
+      offers = List<Map<String, dynamic>>.from(data);
     } catch (e) {
       errorMessage = "فشل تحميل العروض المقدمة";
     } finally {
@@ -27,23 +27,18 @@ class OffersPresentedProvider extends ChangeNotifier {
     }
   }
 
-  // ── Update status of one offer ─────────────────────────────────────────────
   Future<void> updateOfferStatus(int offerId, String newStatus) async {
-    final index = offers.indexWhere((o) => o['id'] == offerId);
+    final index = offers.indexWhere((o) => o['offer_id'] == offerId);
     if (index == -1) return;
 
-    // save old status in case we need to roll back
     final String oldStatus = offers[index]['status'];
 
-    // 1 — update locally first so UI responds instantly
     offers[index]['status'] = newStatus;
     notifyListeners();
 
-    // 2 — sync with API
     try {
       await _service.updateStatus(offerId, newStatus);
     } catch (e) {
-      // API failed — roll back to old status
       offers[index]['status'] = oldStatus;
       errorMessage = "فشل تحديث الحالة";
       notifyListeners();

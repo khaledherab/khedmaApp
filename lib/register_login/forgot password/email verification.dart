@@ -3,6 +3,8 @@ import 'package:gap/gap.dart';
 import 'package:graduation_project/components/button%20form.dart';
 import 'package:graduation_project/components/text%20form%20field.dart';
 import 'package:graduation_project/components/text%20form.dart';
+import 'package:graduation_project/providers/password_reset_provider.dart';
+import 'package:provider/provider.dart';
 
 class Verification extends StatefulWidget {
   const Verification({super.key});
@@ -13,9 +15,19 @@ class Verification extends StatefulWidget {
 
 class EmailVerification extends State<Verification> {
   final TextEditingController emailverifi = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
   GlobalKey<FormState> formkey = GlobalKey<FormState>();
+
+  @override
+  void dispose() {
+    emailverifi.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<PasswordResetProvider>();
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -25,8 +37,8 @@ class EmailVerification extends State<Verification> {
         centerTitle: true,
         backgroundColor: Colors.blue[400],
         title: TextForm(
-          text: "التحقق من الايميل",
-          size: 43,
+          text: "تعيين كلمة السر",
+          size: 40,
           weight: FontWeight.bold,
           color: Colors.blue[900],
         ),
@@ -54,9 +66,11 @@ class EmailVerification extends State<Verification> {
               align: TextAlign.right,
             ),
             Gap(10),
+
             CustomTextForm(
               hint: "user@gmail.com",
               myController: emailverifi,
+
               validator: (val) {
                 if (val == null || val.isEmpty) {
                   return "ادخل بريدك الالكتروني";
@@ -70,21 +84,61 @@ class EmailVerification extends State<Verification> {
                 return null;
               },
             ),
-            Gap(150),
-            Center(child: CircularProgressIndicator()),
             Gap(20),
+
+            TextForm(
+              text: "ادخل كلمة السر الجديدة ",
+              size: 20,
+              align: TextAlign.right,
+            ),
+            Gap(10),
+            CustomTextForm(
+              hint: "كلمة المرور الجديدة",
+              myController: passwordController,
+              validator: (val) {
+                if (val == null || val.isEmpty)
+                  return "أدخل كلمة المرور الجديدة";
+                if (val.length < 6)
+                  return "كلمة المرور يجب أن تكون 6 أحرف على الأقل";
+                return null;
+              },
+            ),
+
+            Gap(50),
+            if (provider.errorMessage != null)
+              Center(
+                child: TextForm(
+                  text: provider.errorMessage!,
+                  color: Colors.red,
+                  size: 17,
+                ),
+              ),
+            Gap(10),
+            if (provider.isLoading) Center(child: CircularProgressIndicator()),
+
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: EdgeInsets.symmetric(horizontal: 20),
               child: ButtonForm(
-                onPressed: () {
-                  // if (!formkey.currentState!.validate()) {
-                  //   return;
-                  // }
-                  Navigator.pushNamed(context, "setpassword");
+                onPressed: () async {
+                  if (!formkey.currentState!.validate()) {
+                    return;
+                  }
+                  bool success = await provider.resetPasswordAction(
+                    emailverifi.text.trim(),
+                    passwordController.text.trim(),
+                  );
+                  if (success && mounted) {
+                    // نجحت العملية، نعود لصفحة تسجيل الدخول
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(provider.successMessage ?? "تم التحديث"),
+                      ),
+                    );
+                    Navigator.of(context).pop();
+                  }
                 },
-                title: "تعيين كلمة المرور",
+                title: "تغيير كلمة المرور",
                 borderradius: BorderRadius.circular(15),
-                // color: Colors.blue[400],
               ),
             ),
           ],

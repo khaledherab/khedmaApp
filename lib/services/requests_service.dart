@@ -1,37 +1,38 @@
 // الطلبات التي قدمها المستخدم
 
+import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
+import 'package:graduation_project/processing/api_exception.dart';
+import 'package:graduation_project/services/api_sercice.dart';
+
 class RequestsService {
-  // ── Fake data (delete this when API is ready) ────────────────────────
-  static final List<Map<String, dynamic>> fakeRequests = [
-    {
-      "id": 1,
-      "title": " عطل كهربائي في المنزل ",
-      "date": "2026-05-31",
-      "offers_count": 3,
-    },
-    {
-      "id": 2,
-      "title": "  غسالة أوتوماتيك",
-      "date": "2026-05-30",
-      "offers_count": 3,
-    },
-  ];
+  final ApiService _apiService = ApiService();
 
-  // ── Fetch all requests ───────────────────────────────────────────────
   Future<List<Map<String, dynamic>>> getRequests() async {
-    await Future.delayed(const Duration(milliseconds: 800)); // fake loading
-    return List.from(fakeRequests);
-  }
+    try {
+      final response = await _apiService.get('customer/requests');
 
-  // ── Add a request ────────────────────────────────────────────────────
-  Future<void> addRequest(Map<String, dynamic> request) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    fakeRequests.add(request);
-  }
+      if (response == null) {
+        throw Exception("الاستجابة فارغة من الخادم");
+      }
 
-  // ── Delete a request ─────────────────────────────────────────────────
-  Future<void> deleteRequest(int id) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    fakeRequests.removeWhere((r) => r['id'] == id);
+      if (response.runtimeType.toString() == 'ApiError') {
+        throw Exception("حدث خطأ في استجابة السيرفر.");
+      }
+
+      if (response is Map && response.containsKey('data')) {
+        return List<Map<String, dynamic>>.from(response['data']);
+      } else if (response is List) {
+        return List<Map<String, dynamic>>.from(response);
+      } else {
+        throw Exception("شكل البيانات غير متوقع من السيرفر");
+      }
+    } on DioException catch (e) {
+      final error = ApiException.handelError(e);
+      throw error.message;
+    } catch (e) {
+      debugPrint("Error in RequestsService (getRequests): $e");
+      throw "حدث خطأ أثناء جلب الطلبات";
+    }
   }
 }

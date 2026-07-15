@@ -1,41 +1,47 @@
 // لجلب بيانات البروفيل الخاصة بالمهني والمستخدم
 //
 
-import 'dart:io';
+import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
+import 'package:graduation_project/processing/api_error.dart';
+import 'package:graduation_project/services/api_sercice.dart';
 
 class ProfileService {
-  // ── Fetch profile data ─────────────────────────────────────────────────────
+  final ApiService _apiService = ApiService();
+  //
   Future<Map<String, dynamic>> getProfile() async {
-    await Future.delayed(const Duration(milliseconds: 600));
+    try {
+      final response = await _apiService.get('profile');
 
-    return {
-      "name": "خالد حيرب",
-      "location": "اللاذقية - المشروع العاشر",
-      "phone": "+963 930000000",
-      "email": "khaled@gmail.com",
-      "role":
-          "professional", // "customer" or "professional" بدل بين مهني ومستخدم لحتى يتبدل الملف الشخصي
-      // على حسب التوكن بيتغير الملف الشخصي (API)لما يجهز ال
-      "avatar_url": "", // DB returns the image URL here
-      "description":
-          "كهربائي معتمد بخبرة 7 سنوات في الصيانة المنزلية والصناعية",
-      "experience": "7",
-    };
+      if (response is ApiError) {
+        throw response;
+      }
+      final data = response['data'] ?? response;
+      return data as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
   }
 
-  // ── Update profile text data ───────────────────────────────────────────────
-  Future<void> updateProfile(Map<String, dynamic> data) async {
-    await Future.delayed(const Duration(milliseconds: 600));
-  }
+  Future<Map<String, dynamic>> updateProfile(
+    Map<String, dynamic> updatedData,
+  ) async {
+    try {
+      // تحويل البيانات إلى FormData لدعم رفع الصور إذا وجدت
+      FormData formData = FormData.fromMap(updatedData);
 
-  // ── Upload profile picture ─────────────────────────────────────────────────
-  // role is passed so Laravel saves it in the correct folder:
-  //   customer     → storage/customers/avatars/
-  //   professional → storage/professionals/avatars/
-  Future<String> uploadAvatar(File imageFile, String role) async {
-    await Future.delayed(const Duration(milliseconds: 800));
+      final response = await _apiService.post('profile/update', formData);
 
-    // fake: return a placeholder URL
-    return "https://via.placeholder.com/150";
+      if (response is ApiError) {
+        throw response;
+      }
+
+      final data = response['data'] ?? response['user'] ?? response;
+      return data as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint("حدث خطأ أثناء تعديل الملف الشخصي.");
+      if (e is ApiError) rethrow;
+      throw ApiError(message: e.toString());
+    }
   }
 }

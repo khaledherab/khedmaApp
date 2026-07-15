@@ -24,6 +24,7 @@ import 'package:graduation_project/providers/location_provider.dart';
 import 'package:graduation_project/providers/notifications_provider.dart';
 import 'package:graduation_project/providers/offers_presented_provider.dart';
 import 'package:graduation_project/providers/offers_provider.dart';
+import 'package:graduation_project/providers/password_reset_provider.dart';
 import 'package:graduation_project/providers/professional_provider.dart';
 import 'package:graduation_project/providers/professional_requests_provider.dart';
 import 'package:graduation_project/providers/profile_provider.dart';
@@ -37,7 +38,6 @@ import 'package:graduation_project/settings/profile.dart';
 import 'package:graduation_project/register_login/create%20account.dart';
 import 'package:graduation_project/register_login/create%20account%20or%20login.dart';
 import 'package:graduation_project/register_login/forgot%20password/email%20verification.dart';
-import 'package:graduation_project/register_login/forgot%20password/set%20password.dart';
 import 'package:graduation_project/register_login/professional%20information.dart';
 import 'package:graduation_project/register_login/public%20information.dart';
 import 'package:graduation_project/register_login/login.dart';
@@ -66,10 +66,10 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ConversationsProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => CategoryProvider()),
-        ChangeNotifierProvider(create: (_) => RatingProvider()),
         ChangeNotifierProvider(create: (_) => LocationProvider()),
         ChangeNotifierProvider(create: (_) => ComplaintProvider()),
         ChangeNotifierProvider(create: (_) => RatingProvider()),
+        ChangeNotifierProvider(create: (_) => PasswordResetProvider()),
       ],
       child: const MyApp(),
     ),
@@ -92,7 +92,7 @@ class MyApp extends StatelessWidget {
         "otherinformation": (context) => Professional_Information(),
         "categories": (context) => Categories(),
         "emailverification": (context) => Verification(),
-        "setpassword": (context) => NewPassword(),
+
         "customerhomepage": (context) => CustomerHomePage(),
         "notification": (context) => Notificationpage(),
         "service_request": (context) => ServiceRequest(),
@@ -103,7 +103,7 @@ class MyApp extends StatelessWidget {
         "support": (context) => Help(),
         "about": (context) => About(),
         "wallet": (context) => Balance(),
-        "professionalhomepagr": (context) => ProfessionalHomePage(),
+        "professionalhomepage": (context) => ProfessionalHomePage(),
         "customerrequests": (context) => Requests_at_the_Professional(),
         "requestdetails": (context) => RequestDetails(),
         "createofferforrequest": (context) => CreateOfferForRequest(),

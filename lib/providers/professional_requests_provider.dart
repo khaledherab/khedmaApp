@@ -8,12 +8,11 @@ class ProfessionalRequestsProvider extends ChangeNotifier {
   final ProfessionalRequestsService _service = ProfessionalRequestsService();
 
   List<Map<String, dynamic>> requests = [];
-  Map<String, dynamic>? selected; // the request the professional tapped
+  Map<String, dynamic>? selected;
   bool isLoading = false;
   String? errorMessage;
 
-  // ── Fetch all requests assigned to this professional ──────────────────────
-  Future<void> fetchRequests() async {
+  Future<void> realRequests() async {
     isLoading = true;
     errorMessage = null;
     notifyListeners();
@@ -28,7 +27,6 @@ class ProfessionalRequestsProvider extends ChangeNotifier {
     }
   }
 
-  // ── Select a request to view its details ──────────────────────────────────
   void selectRequest(Map<String, dynamic> request) {
     selected = request;
     notifyListeners();

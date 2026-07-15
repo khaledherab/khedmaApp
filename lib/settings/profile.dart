@@ -1,3 +1,5 @@
+// import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:graduation_project/components/app_states.dart';
@@ -6,6 +8,7 @@ import 'package:graduation_project/components/primary%20color.dart';
 import 'package:graduation_project/components/profile%20item.dart';
 import 'package:graduation_project/components/text%20form.dart';
 import 'package:graduation_project/providers/profile_provider.dart';
+// import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 class Profile extends StatefulWidget {
@@ -19,7 +22,7 @@ class _ProfileState extends State<Profile> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => context.read<ProfileProvider>().fetchProfile());
+    Future.microtask(() => context.read<ProfileProvider>().realProfile());
   }
 
   @override
@@ -58,14 +61,14 @@ class _ProfileState extends State<Profile> {
           : provider.errorMessage != null
           ? AppStates.buildErrorState(
               provider.errorMessage!,
-              onRetry: () => context.read<ProfileProvider>().fetchProfile(),
+              onRetry: () => context.read<ProfileProvider>().realProfile(),
             )
           : buildBody(provider),
     );
   }
 
   Widget buildBody(ProfileProvider provider) {
-    final profile = provider.profile ?? {};
+    final profile = provider.profile!;
     final bool isPro = provider.isProfessional;
 
     return SingleChildScrollView(
@@ -81,41 +84,23 @@ class _ProfileState extends State<Profile> {
                   radius: 60,
                   // يوجد صورة شخصية  , اذا نجح التحميل تظهر الصورة
                   // و اذا لم ينجح التحميل لا تظهر الصورة
-                  backgroundImage: provider.avatarFile != null
-                      ? FileImage(provider.avatarFile!)
+                  backgroundImage: provider.hasAvatar
+                      ? MemoryImage(provider.avatarBytes!)
                       : null,
-                  foregroundImage:
-                      provider.avatarFile == null &&
-                          provider.avatarUrl != null &&
-                          provider.avatarUrl!.isNotEmpty
-                      ? NetworkImage(provider.avatarUrl!)
-                      : null,
+
                   // لا يوجد صورة شخصية
                   // تظهر الايقونة
                   child: !provider.hasAvatar
                       ? Icon(Icons.person, size: 55, color: Color(0xFF1976D2))
                       : null,
                 ),
-
-                // عند اختيار صورة تظهر دائرة تحميل خفيفة مكان الصورة وبعدها تظهر الصورة
-                if (provider.isUploading)
-                  Positioned.fill(
-                    child: CircleAvatar(
-                      radius: 60,
-                      backgroundColor: Colors.black26,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    ),
-                  ),
               ],
             ),
           ),
           Gap(10),
           Center(
             child: TextForm(
-              text: isPro ? "مهني " : "",
+              text: isPro ? "مهني " : "عميل",
               size: 25,
               weight: FontWeight.bold,
               color: Color(0xFF1976D2),
@@ -132,25 +117,25 @@ class _ProfileState extends State<Profile> {
               children: [
                 ProfileDataItems(
                   title: "الاسم",
-                  subtitle: profile['name'] ?? '',
+                  subtitle: profile.name,
                   icon: Icons.person,
                 ),
                 Gap(6),
                 ProfileDataItems(
                   title: "الموقع",
-                  subtitle: profile['location'] ?? '',
+                  subtitle: profile.location,
                   icon: Icons.location_on,
                 ),
                 Gap(6),
                 ProfileDataItems(
                   title: "رقم الهاتف",
-                  subtitle: profile['phone'] ?? '',
+                  subtitle: profile.phone,
                   icon: Icons.phone,
                 ),
                 Gap(6),
                 ProfileDataItems(
                   title: "البريد الالكتروني",
-                  subtitle: profile['email'] ?? '',
+                  subtitle: profile.email,
                   icon: Icons.mark_email_read_rounded,
                 ),
 
@@ -158,14 +143,24 @@ class _ProfileState extends State<Profile> {
                 if (isPro) ...[
                   Gap(6),
                   ProfileDataItems(
+                    title: "التخصص",
+                    subtitle: profile.category.isNotEmpty
+                        ? profile.category
+                        : 'غير محدد',
+                    icon: Icons.build_circle_outlined,
+                  ),
+                  Gap(6),
+                  ProfileDataItems(
                     title: "وصف الخدمة",
-                    subtitle: profile['description'] ?? '',
+                    subtitle: profile.description,
                     icon: Icons.description_outlined,
                   ),
                   Gap(6),
                   ProfileDataItems(
                     title: "سنوات الخبرة",
-                    subtitle: "${profile['experience'] ?? '0'} سنوات",
+                    subtitle: profile.experience.isNotEmpty
+                        ? "${profile.experience}"
+                        : '0',
                     icon: Icons.workspace_premium_outlined,
                   ),
                 ],
@@ -179,8 +174,14 @@ class _ProfileState extends State<Profile> {
           Padding(
             padding: EdgeInsets.only(right: 15),
             child: ButtonForm(
-              onPressed: () {
-                Navigator.pushNamed(context, "editeprofile");
+              onPressed: () async {
+                final result = await Navigator.pushNamed(
+                  context,
+                  "editeprofile",
+                );
+                if (result == true && context.mounted) {
+                  context.read<ProfileProvider>().realProfile();
+                }
               },
               title: "تعديل الملف الشخصي",
               borderradius: BorderRadius.circular(15),

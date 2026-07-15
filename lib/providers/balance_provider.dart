@@ -6,44 +6,37 @@ import 'package:graduation_project/services/balance_service.dart';
 class BalanceProvider extends ChangeNotifier {
   final BalanceService _service = BalanceService();
 
-  // ── State ------------------------------------
-  String balance = "0";
-  List<Map<String, String>> transactions = [];
+  String balance = "0.00";
   bool isLoading = false;
   String? errorMessage;
 
-  // ── Fetch both balance and transactions together ---------------------
-  Future<void> fetchWalletData() async {
+  List<dynamic> transactions = [];
+
+  Future<void> WalletData() async {
     isLoading = true;
     errorMessage = null;
     notifyListeners();
 
     try {
-      // run both requests at the same time, don't wait one then the other
-      final results = await Future.wait([
-        _service.getBalance(),
-        _service.getTransactions(),
-      ]);
+      final fetchedBalance = await _service.getWalletBalance();
+      if (fetchedBalance != null) {
+        balance = fetchedBalance;
+      } else {
+        errorMessage = "تعذر جلب الرصيد الحالي";
+      }
 
-      balance = results[0] as String;
-      transactions = results[1] as List<Map<String, String>>;
+      //  جلب العمليات
+      final fetchedTransactions = await _service.getWalletTransactions();
+      if (fetchedTransactions != null) {
+        transactions = fetchedTransactions;
+      } else {
+        // يمكنك تخصيص رسالة خطأ هنا إذا رغبت، أو تركها فارغة
+      }
     } catch (e) {
-      errorMessage = "فشل تحميل بيانات المحفظة";
+      errorMessage = "حدث خطأ أثناء الاتصال بالخادم";
     } finally {
       isLoading = false;
-      notifyListeners(); // ← UI rebuilds here
+      notifyListeners();
     }
-  }
-
-  // ── Deposit -------------------------------ايداع رصيد
-  Future<void> deposit(String amount) async {
-    await _service.deposit(amount);
-    await fetchWalletData(); // re-fetch → UI updates automatically
-  }
-
-  // ── Withdraw --------------------------------------- سحب الرصيد
-  Future<void> withdraw(String amount) async {
-    await _service.withdraw(amount);
-    await fetchWalletData(); // re-fetch → UI updates automatically
   }
 }

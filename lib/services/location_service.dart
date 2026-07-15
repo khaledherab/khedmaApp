@@ -45,7 +45,7 @@ class LocationService {
             .map((item) => CityModel.fromJson(item))
             .toList();
       } else {
-        throw Exception('شكل الاستجابة غير متوقع');
+        throw Exception(' شكل الاستجابة غير متوقع');
       }
     } on DioException catch (e) {
       final customerError = ApiException.handelError(e);

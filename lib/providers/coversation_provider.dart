@@ -10,11 +10,9 @@ class ConversationsProvider extends ChangeNotifier {
   bool isLoading = false;
   String? errorMessage;
 
-  // ── Total unread count (for nav bar badge) ─────────────────────────────────
   int get totalUnread =>
       conversations.fold(0, (sum, c) => sum + (c['unread_count'] as int? ?? 0));
 
-  // ── Fetch conversations ────────────────────────────────────────────────────
   Future<void> fetchConversations() async {
     isLoading = true;
     errorMessage = null;
@@ -24,23 +22,24 @@ class ConversationsProvider extends ChangeNotifier {
       conversations = await _service.getConversations();
     } catch (e) {
       errorMessage = e.toString().replaceFirst('Exception: ', '');
+      debugPrint("ConversationsProvider.fetchConversations error: $e");
     } finally {
       isLoading = false;
       notifyListeners();
     }
   }
 
-  // ── Mark conversation as read locally ─────────────────────────────────────
-  // called when user opens a conversation
   void markConversationRead(int conversationId) {
     final index = conversations.indexWhere((c) => c['id'] == conversationId);
     if (index != -1) {
       conversations[index]['unread_count'] = 0;
       notifyListeners();
     }
+    // silent background call — does not block navigation
+    _service.markAsRead(conversationId).catchError((_) {});
   }
 
-  // ── Update last message (called after sending) ─────────────────────────────
+  // ── Update last message after sending (called from ChatPage) ──────────────
   void updateLastMessage(int conversationId, String message) {
     final index = conversations.indexWhere((c) => c['id'] == conversationId);
     if (index != -1) {
@@ -48,7 +47,7 @@ class ConversationsProvider extends ChangeNotifier {
       conversations[index]['last_message_at'] = DateTime.now()
           .toString()
           .substring(0, 16);
-      // move this conversation to the top
+      // bubble to the top like WhatsApp
       final updated = conversations.removeAt(index);
       conversations.insert(0, updated);
       notifyListeners();

@@ -10,15 +10,15 @@ class ProfessionalsProvider extends ChangeNotifier {
   bool isLoading = false;
   String? errorMessage;
 
-  Future<void> fetchProfessionals(String category) async {
+  Future<void> showProfessionals(String categoryId) async {
     isLoading = true;
     errorMessage = null;
     notifyListeners();
 
     try {
-      professionals = await _service.getProfessionalsByCategory(category);
+      professionals = await _service.getProfessionalsByCategory(categoryId);
     } catch (e) {
-      errorMessage = "فشل تحميل المختصين";
+      errorMessage = e.toString();
     } finally {
       isLoading = false;
       notifyListeners();
@@ -26,10 +26,14 @@ class ProfessionalsProvider extends ChangeNotifier {
   }
 
   void updateProfessionalRating(int professionalId, double newAverage) {
-    final index = professionals.indexWhere((p) => p['id'] == professionalId);
+    final index = professionals.indexWhere(
+      (p) => p['professional_id'] == professionalId,
+    );
     if (index != -1) {
-      professionals[index]['rate'] = newAverage;
-      notifyListeners(); // ← professional card rebuilds with new rating
+      professionals[index]['rating'] = newAverage;
+      notifyListeners();
     }
   }
+
+  void notifyListeners() {}
 }

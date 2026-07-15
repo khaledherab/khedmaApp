@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:graduation_project/components/button%20form.dart';
@@ -7,6 +8,7 @@ import 'package:graduation_project/components/image.dart';
 import 'package:graduation_project/components/text%20form%20field.dart';
 import 'package:graduation_project/components/text%20form.dart';
 import 'package:graduation_project/providers/auth_provider.dart';
+import 'package:graduation_project/providers/category_provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
@@ -29,25 +31,15 @@ class _Professional_Information extends State<Professional_Information> {
 
   File? toolsimage;
   bool submitted = false;
+  String? selectCategoryId;
+  @override
+  void initState() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CategoryProvider>().loadCategories();
+    });
+    super.initState();
+  }
 
-  final List<String> categories = [
-    "كهرباء",
-    "سباكة",
-    "نجار",
-    "حدادة",
-    "دهان",
-    "تبريد وتكييف",
-    "تنظيف",
-    "نقل اثاث",
-    "تركيب كاميرات",
-    "تنسيق حدائق",
-    "تركيب انترنت",
-    "نقل عام",
-    "تعقيم",
-    "غسيل سيارات",
-    "تركيب زجاج",
-    "بلاط",
-  ];
   @override
   void dispose() {
     category.dispose();
@@ -119,26 +111,32 @@ class _Professional_Information extends State<Professional_Information> {
 
   Future<void> submit() async {
     setState(() => submitted = true);
-    context.read<AuthProvider>().clearError();
+    final provider = context.read<AuthProvider>();
+    provider.clearError();
 
     // image is mandatory
     if (toolsimage == null) return;
 
-    if (!formKey.currentState!.validate()) return;
+    // if (!formKey.currentState!.validate()) return;////////////
+    provider.registerData.categoryId = selectCategoryId;
+    provider.registerData.experienceYears = yearexperence.text.trim();
+    provider.registerData.description = description.text;
+    provider.registerData.toolsImage = toolsimage!;
 
-    final success = await context.read<AuthProvider>().saveProfessionalInfo(
-      category: category.text,
-      yearsExperience: yearexperence.text.trim(),
-      description: description.text,
-      toolsImage: toolsimage!,
-    );
-
-    if (!mounted) return;
+    final success = await provider.submitStep3();
 
     ///للحماية ,لو أن المستخدم اختار صورة وفي نفس اللحظة ضغط على زر "رجوع" وأغلق الصفحة، هذا السطر يمنع الكود من الاستمرار في العمل
+    if (!mounted) return;
 
     if (success) {
+      debugPrint(
+        "تم انشاء حساب المهني بنجاح ==================== تقعيل الانتقال",
+      );
       Navigator.of(context).pushReplacementNamed("professionalhomepage");
+    } else {
+      debugPrint(
+        "حدث خطأ اثناء انشاء حشاب المهني , الخطأ في ال AuthProvider ال في ال AuthRepo=========================",
+      );
     }
   }
 
@@ -193,22 +191,63 @@ class _Professional_Information extends State<Professional_Information> {
                   ),
                   Gap(10),
                   TextForm(text: "الخدمة\t", size: 28),
+                  Consumer<CategoryProvider>(
+                    builder: (context, catProvider, child) {
+                      if (catProvider.isLoading) {
+                        return Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(8),
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      }
 
-                  CustomTextForm(
-                    hint: "الخدمة",
-                    myController: category,
-                    enabled: true,
-                    prefixIcon: Icon(
-                      Icons.arrow_drop_down_sharp,
-                      color: const Color.fromARGB(255, 59, 115, 160),
-                    ),
-                    dropdownItems: categories,
-                    validator: (val) {
-                      if (val == null || val.isEmpty)
-                        return "يرجى اختيار الخدمة";
-                      return null;
+                      if (catProvider.errorMessage != null) {
+                        return TextButton.icon(
+                          onPressed: () =>
+                              catProvider.loadCategories(forceRefresh: true),
+                          icon: Icon(Icons.refresh, color: Colors.red),
+                          label: Text(
+                            "حدث خطأ في جلب الخدمات، اضغط للمحاولة",
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        );
+                      }
+
+                      List<String> categoryNames = catProvider.categories
+                          .map((c) => c.name)
+                          .toList();
+
+                      return CustomTextForm(
+                        hint: "الخدمة",
+                        myController: category,
+                        enabled: categoryNames.isNotEmpty,
+                        prefixIcon: Icon(
+                          Icons.arrow_drop_down_sharp,
+                          color: const Color.fromARGB(255, 59, 115, 160),
+                        ),
+                        dropdownItems: categoryNames.isNotEmpty
+                            ? categoryNames
+                            : null,
+                        onChanged: (selectName) {
+                          final selectedCategory = catProvider.categories
+                              .firstWhere((c) => c.name == selectName);
+
+                          setState(() {
+                            selectCategoryId = selectedCategory.id.toString();
+                          });
+
+                          category.text = selectName;
+                        },
+                        validator: (val) {
+                          if (val == null || val.isEmpty)
+                            return "يرجى اختيار الخدمة";
+                          return null;
+                        },
+                      );
                     },
                   ),
+
                   Gap(10),
                   TextForm(text: "سنين الخبرة\t", size: 27),
                   Gap(10),
@@ -260,8 +299,10 @@ class _Professional_Information extends State<Professional_Information> {
                                 top: 8,
                                 left: 8,
                                 child: GestureDetector(
-                                  onTap: () {},
-                                  // setState(() => toolsimage = null),/////////////////////////////////////////////////
+                                  onTap: () {
+                                    setState(() => toolsimage = null);
+                                  },
+
                                   child: CircleAvatar(
                                     radius: 16,
                                     backgroundColor: Colors.black.withOpacity(
@@ -375,21 +416,14 @@ class _Professional_Information extends State<Professional_Information> {
                       ),
                     ),
                   Center(
-                    child: ButtonForm(
-                      padding: EdgeInsets.symmetric(horizontal: 130),
-                      borderradius: BorderRadiusGeometry.circular(20),
-                      onPressed: () {
-                        Navigator.pushReplacementNamed(
-                          context,
-                          "professionalhomepagr",
-                        );
-                        // Navigator.of(
-                        //   context,
-                        // ).pushReplacementNamed("professionalhomepage");
-                      },
-                      // provider.isLoading ? null : submit,
-                      title: "متابعة ",
-                    ),
+                    child: provider.isLoading
+                        ? CupertinoActivityIndicator(color: Colors.white)
+                        : ButtonForm(
+                            padding: EdgeInsets.symmetric(horizontal: 130),
+                            borderradius: BorderRadiusGeometry.circular(20),
+                            onPressed: submit,
+                            title: "متابعة ",
+                          ),
                   ),
                   Gap(20),
                 ],

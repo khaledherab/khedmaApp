@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:graduation_project/components/custom%20card.dart';
 import 'package:graduation_project/components/text%20form.dart';
+import 'package:graduation_project/providers/profile_provider.dart';
+import 'package:provider/provider.dart';
 
 class Setting extends StatelessWidget {
   const Setting({super.key});
@@ -107,7 +109,12 @@ class Setting extends StatelessWidget {
           ),
           Gap(7),
           CustomCard(
-            onTap: () {},
+            onTap: () {
+              context.read<ProfileProvider>().clearProfileData();
+              Navigator.of(
+                context,
+              ).pushNamedAndRemoveUntil("registerlogin", (route) => false);
+            },
             height: 25,
             title: "تسجيل الخروج",
             trailing: CircleAvatar(

@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:graduation_project/components/button%20form.dart';
@@ -22,22 +23,39 @@ class Register extends State<RegisterAccount> {
   GlobalKey<FormState> formkey = GlobalKey<FormState>();
 
   Future<void> register() async {
-    // ازالة الاخطاء اذا المستخدم حاول وفشل سابقا
-    context.read<AuthProvider>().clearError();
+    final provider = context.read<AuthProvider>();
 
+    provider.clearError();
     // if (!formkey.currentState!.validate()) return;//////////////////////////// الغاء التعليق عند الربط
 
-    final success = await context.read<AuthProvider>().register(
-      name: name.text,
-      email: email.text.trim(),
-      password: password.text,
-    );
+    provider.registerData.name = name.text;
+    provider.registerData.email = email.text.trim();
+    provider.registerData.password = password.text;
 
+    final success = await provider.submitStep1();
     if (!mounted) return;
 
     if (success) {
       Navigator.of(context).pushNamed("registerinformation");
+      debugPrint("تم انشاء الحساب ================");
+    } else {
+      debugPrint(
+        "حدث خطأ في انشاء الحساب , الخطأ في ال AuthProvider او في ال AuthRepo",
+      );
+      // Future.delayed(Duration(seconds: 2), () {
+      //   if (mounted) {
+      //     context.read<AuthProvider>().clearError();
+      //   }
+      // });
     }
+  }
+
+  @override
+  void dispose() {
+    name.dispose();
+    email.dispose();
+    password.dispose();
+    super.dispose();
   }
 
   @override
@@ -180,13 +198,15 @@ class Register extends State<RegisterAccount> {
                         ),
                       Gap(20),
                       Center(
-                        child: ButtonForm(
-                          padding: EdgeInsets.symmetric(horizontal: 130),
-                          borderradius: BorderRadiusGeometry.circular(20),
-                          onPressed: provider.isLoading ? null : register,
+                        child: provider.isLoading
+                            ? CupertinoActivityIndicator(color: Colors.blue)
+                            : ButtonForm(
+                                padding: EdgeInsets.symmetric(horizontal: 130),
+                                borderradius: BorderRadiusGeometry.circular(20),
+                                onPressed: register,
 
-                          title: "استمر",
-                        ),
+                                title: "استمر",
+                              ),
                       ),
                     ],
                   ),

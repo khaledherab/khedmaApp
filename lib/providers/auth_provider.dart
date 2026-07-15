@@ -1,117 +1,136 @@
 //
 
-import 'dart:io';
+// import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:graduation_project/services/auth_service.dart';
+import 'package:graduation_project/services/auth_repo_service.dart';
+import 'package:graduation_project/model/registration_madel.dart';
+import 'package:graduation_project/model/user_model.dart';
+import 'package:graduation_project/processing/helper.dart';
 
 class AuthProvider extends ChangeNotifier {
-  final AuthService _service = AuthService();
+  final AuthRepo _authRepo = AuthRepo();
+  RegistrationModel registerData = RegistrationModel();
+
+  UserModel? currentUser;
 
   bool isLoading = false;
   String? errorMessage;
 
-  Future<bool> register({
-    required String name,
-    required String email,
-    required String password,
-  }) async {
-    isLoading = true;
-    errorMessage = null;
-    notifyListeners();
-
-    try {
-      await _service.register(name: name, email: email, password: password);
-      return true; // عند النجاح الانتقال الى الصفحة التالية
-    } catch (e) {
-      errorMessage = e.toString().replaceFirst('Exception: ', '');
-      return false; // عند الفشل اظهار رسالة خطأ
-    } finally {
-      isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  // ── Save extra info (step 2) ───────────────────────────────────────────────
-  Future<bool> saveUserInfo({
-    required String phone,
-    required String role,
-    required String governorateId,
-    String? cityId,
-  }) async {
-    isLoading = true;
-    errorMessage = null;
-    notifyListeners();
-
-    try {
-      await _service.saveUserInfo(
-        phone: phone,
-        role: role,
-        governorateId: governorateId,
-        cityId: cityId,
-      );
-      return true;
-    } catch (e) {
-      errorMessage = e.toString().replaceFirst('Exception: ', '');
-      return false;
-    } finally {
-      isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  Future<bool> saveProfessionalInfo({
-    required String category,
-    required String yearsExperience,
-    required String description,
-    required File toolsImage,
-  }) async {
-    isLoading = true;
-    errorMessage = null;
-    notifyListeners();
-    try {
-      await _service.saveProfessionalInfo(
-        category: category,
-        yearsExperience: yearsExperience,
-        description: description,
-        toolsImage: toolsImage,
-      );
-      return true;
-    } catch (e) {
-      errorMessage = e.toString().replaceFirst('Exception: ', '');
-      return false;
-    } finally {
-      isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  Future<bool> login({required String email, required String password}) async {
-    isLoading = true;
-    errorMessage = null;
-    notifyListeners();
-
-    try {
-      await _service.login(email: email, password: password);
-      return true;
-    } catch (e) {
-      errorMessage = e.toString().replaceFirst('Exception: ', '');
-      return false;
-    } finally {
-      isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  Future<void> logout() async {
-    await _service.logout();
-    notifyListeners();
-  }
-
-  //  ظهور خطأ في محاولة تسجيل الدخول الاولى
-  // عند المحاولة من جديد تختفي الاخطاء من المحاولة السابقة
   void clearError() {
     errorMessage = null;
     notifyListeners();
+  }
+
+  /// الخطوة 1: إرسال (الاسم، الإيميل، كلمة السر)
+  Future<bool> submitStep1() async {
+    isLoading = true;
+    clearError();
+    notifyListeners();
+
+    try {
+      // إرسال البيانات واستقبال كائن المستخدم (والذي يحتوي على التوكن)
+      currentUser = await _authRepo.registerUser(registerData);
+      // حفظ التوكن في SharedPreferences لاستخدامه في الطلبات القادمة
+      if (currentUser != null && currentUser!.token != null) {
+        await PrefHelper.saveToken(currentUser!.token!);
+      }
+
+      isLoading = false;
+      notifyListeners();
+      return true; // نجاح، يمكن الانتقال للصفحة الثانية
+    } catch (e) {
+      errorMessage = e.toString();
+      isLoading = false;
+      notifyListeners();
+      return false; // فشل
+    }
+  }
+
+  ///  إرسال (الهاتف، الدور، المحافظة، المدينة)
+  Future<bool> submitStep2() async {
+    isLoading = true;
+    clearError();
+    notifyListeners();
+
+    try {
+      String currentUserId = currentUser!.id.toString();
+      await _authRepo.registerPublicInfo(registerData, currentUserId);
+
+      isLoading = false;
+      notifyListeners();
+      return true; // نجاح
+    } catch (e) {
+      errorMessage = e.toString();
+      isLoading = false;
+      notifyListeners();
+      return false; // فشل
+    }
+  }
+
+  ///   إرسال (بيانات المهني والصورة)
+  Future<bool> submitStep3() async {
+    isLoading = true;
+    clearError();
+    notifyListeners();
+
+    try {
+      String currentUserId = currentUser!.id.toString();
+      await _authRepo.registerProfessionalInfo(registerData, currentUserId);
+
+      // تفريغ البيانات بعد انتهاء التسجيل بالكامل بنجاح
+      registerData = RegistrationModel();
+
+      isLoading = false;
+      notifyListeners();
+      return true; // التسجيل اكتمل بنجاح تام!
+    } catch (e) {
+      errorMessage = e.toString();
+      isLoading = false;
+      notifyListeners();
+      return false; // فشل
+    }
+  }
+
+  // --- دالة تسجيل الدخول ---
+  Future<bool> login({required String email, required String password}) async {
+    isLoading = true;
+    clearError();
+    notifyListeners();
+
+    try {
+      currentUser = await _authRepo.login(email, password);
+
+      isLoading = false;
+      notifyListeners();
+      return true; // نجاح
+    } catch (e) {
+      errorMessage = e.toString();
+      isLoading = false;
+      notifyListeners();
+      return false; // فشل
+    }
+  }
+
+  // --- دالة تسجيل الخروج ---
+  Future<bool> logout() async {
+    isLoading = true;
+    notifyListeners();
+
+    try {
+      await _authRepo.logout();
+      currentUser = null; // مسح بيانات المستخدم من الذاكرة
+
+      await PrefHelper.clearToken();
+
+      isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      errorMessage = e.toString();
+      isLoading = false;
+      notifyListeners();
+      return false;
+    }
   }
 }

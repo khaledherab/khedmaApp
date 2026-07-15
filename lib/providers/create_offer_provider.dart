@@ -10,11 +10,11 @@ class CreateOfferProvider extends ChangeNotifier {
   bool isSuccess = false;
   String? errorMessage;
 
-  //  Submit offer --------------------------
-  Future<void> submitOffer({
+  Future<bool> submitOffer({
     required int requestId,
     required String details,
-    required String estimatedTime,
+    required String duration,
+    required String price,
   }) async {
     isSubmitting = true;
     isSuccess = false;
@@ -25,18 +25,21 @@ class CreateOfferProvider extends ChangeNotifier {
       await _service.submitOffer(
         requestId: requestId,
         details: details,
-        estimatedTime: estimatedTime,
+        duration: duration,
+        price: price,
       );
+
       isSuccess = true;
+      return true;
     } catch (e) {
-      errorMessage = e.toString().replaceFirst('Exception: ', '');
+      errorMessage = "حدث خطأ أثناء إرسال العرض";
+      return false;
     } finally {
       isSubmitting = false;
       notifyListeners();
     }
   }
 
-  // التهيئة عند اغلاق الصفحة
   void reset() {
     isSubmitting = false;
     isSuccess = false;

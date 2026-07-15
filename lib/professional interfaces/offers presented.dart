@@ -19,42 +19,53 @@ class offerspresented extends State<OffersPresented> {
   void initState() {
     super.initState();
     Future.microtask(
-      () => context.read<OffersPresentedProvider>().fetchSubmittedOffers(),
+      () => context.read<OffersPresentedProvider>().SubmittedOffers(),
     );
   }
 
-  // ── Status helpers ───────────────────────────────────────────────────────────
-  Color statusColor(String status) {
-    switch (status) {
-      case "مقبول":
-        return Color(0xFF2E7D32);
-      case "مرفوض":
-        return Colors.red[700]!;
-      case "قيد الانتظار":
-        return Color(0xFFF57F17);
+  String translateStatus(String status) {
+    switch (status.toLowerCase()) {
+      case "accepted":
+        return "مقبول";
+      case "rejected":
+        return "مرفوض";
+      case "pending":
       default:
-        return Colors.grey;
+        return "قيد الانتظار";
+    }
+  }
+
+  Color statusColor(String status) {
+    switch (status.toLowerCase()) {
+      case "accepted":
+        return const Color(0xFF2E7D32);
+      case "rejected":
+        return Colors.red[700]!;
+      case "pending":
+      default:
+        return const Color(0xFFF57F17);
     }
   }
 
   IconData statusIcon(String status) {
-    switch (status) {
-      case "مقبول":
+    switch (status.toLowerCase()) {
+      case "accepted":
         return Icons.check_circle_outline_rounded;
-      case "مرفوض":
+      case "rejected":
         return Icons.cancel_outlined;
-      case "قيد الانتظار":
-        return Icons.hourglass_top_rounded;
+      case "pending":
       default:
-        return Icons.info_outline;
+        return Icons.hourglass_top_rounded;
     }
   }
 
   // ── Offer card --------------------------------------------
   Widget buildOfferCard(Map<String, dynamic> offer) {
-    final String status = offer['status'] ?? 'قيد الانتظار';
-    final Color statuscolor = statusColor(status);
-    final IconData statusicon = statusIcon(status);
+    final String rawStatus = offer['status'] ?? 'pending';
+
+    final String translatedStatus = translateStatus(rawStatus);
+    final Color statuscolor = statusColor(rawStatus);
+    final IconData statusicon = statusIcon(rawStatus);
 
     return Container(
       margin: EdgeInsets.only(bottom: 16),
@@ -64,7 +75,6 @@ class offerspresented extends State<OffersPresented> {
       ),
       child: Column(
         children: [
-          // ── Top: status banner ───────────────────────────────────────────────
           Container(
             width: double.infinity,
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -75,7 +85,6 @@ class offerspresented extends State<OffersPresented> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // date
                 Row(
                   children: [
                     Icon(
@@ -84,14 +93,18 @@ class offerspresented extends State<OffersPresented> {
                       color: Colors.grey,
                     ),
                     Gap(4),
-                    TextForm(text: offer['date'], size: 16, color: Colors.grey),
+                    TextForm(
+                      text: offer['date'] ?? '',
+                      size: 16,
+                      color: Colors.grey,
+                    ),
                   ],
                 ),
-                // status badge
+
                 Row(
                   children: [
                     TextForm(
-                      text: status,
+                      text: translatedStatus,
                       size: 16,
                       weight: FontWeight.bold,
                       color: statuscolor,
@@ -104,15 +117,13 @@ class offerspresented extends State<OffersPresented> {
             ),
           ),
 
-          // ── Middle: content ──────────────────────────────────────────────────
           Padding(
             padding: EdgeInsets.fromLTRB(16, 12, 16, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                // request title
                 TextForm(
-                  text: " الطلب : ${offer['requestTitle']}",
+                  text: " الطلب : ${offer['request'] ?? ''}",
                   size: 18,
                   weight: FontWeight.bold,
                   color: Color(0xFF0D47A1),
@@ -121,12 +132,11 @@ class offerspresented extends State<OffersPresented> {
 
                 Gap(8),
 
-                // client name + location
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextForm(
-                      text: offer['location'],
+                      text: offer['location'] ?? '',
                       size: 16,
                       color: Colors.grey[600],
                     ),
@@ -138,7 +148,7 @@ class offerspresented extends State<OffersPresented> {
                     ),
                     Gap(10),
                     TextForm(
-                      text: offer['clientName'],
+                      text: offer['customer'] ?? '',
                       size: 16,
                       weight: FontWeight.w600,
                       color: Colors.grey[600],
@@ -152,9 +162,8 @@ class offerspresented extends State<OffersPresented> {
                   ],
                 ),
 
-                // Gap(10),
                 Divider(color: Color(0xFFE3F2FD)),
-                // Gap(5),
+
                 TextForm(
                   text: "محتوى العرض",
                   size: 20,
@@ -162,15 +171,56 @@ class offerspresented extends State<OffersPresented> {
                   color: Color(0xFF1976D2),
                 ),
                 Gap(8),
-                // offer details
+
                 TextForm(
-                  text: offer['details'],
+                  text: offer['offer_body'] ?? '',
                   size: 16,
                   align: TextAlign.right,
                   color: Colors.grey[600],
                 ),
+                TextForm(text: "السعر :${offer['price']} "),
 
                 Gap(12),
+                Divider(color: Color(0xFFE3F2FD)),
+                Gap(8),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        TextForm(
+                          text: offer['duration'] ?? "",
+                          size: 16,
+                          color: Colors.grey[700],
+                          weight: FontWeight.w600,
+                        ),
+                        Gap(5),
+                        Icon(
+                          Icons.timer_outlined,
+                          color: Color(0xFFF57F17),
+                          size: 18,
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        TextForm(
+                          text: "${offer['price'] ?? ''} ل.س",
+                          size: 16,
+                          color: Colors.green[700],
+                          weight: FontWeight.bold,
+                        ),
+                        const Gap(5),
+                        const Icon(
+                          Icons.monetization_on_outlined,
+                          color: Colors.green,
+                          size: 18,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -210,9 +260,8 @@ class offerspresented extends State<OffersPresented> {
           : provider.errorMessage != null
           ? AppStates.buildErrorState(
               provider.errorMessage!,
-              onRetry: () => context
-                  .read<OffersPresentedProvider>()
-                  .fetchSubmittedOffers(),
+              onRetry: () =>
+                  context.read<OffersPresentedProvider>().SubmittedOffers(),
             )
           : provider.offers.isEmpty
           ? AppStates.buildEmptyState(

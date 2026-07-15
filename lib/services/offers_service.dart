@@ -1,70 +1,48 @@
 // هذه العروض التي قدمها المهني
 // وتلقى هذه العروض المستخدم كل طلب له عدد من العروض
 
+import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
+import 'package:graduation_project/processing/api_exception.dart';
+import 'package:graduation_project/services/api_sercice.dart';
+
 class OffersService {
-  // ── Fetch offers for a specific request ───────────────────────────────────
+  final ApiService _apiService = ApiService();
+
   Future<List<Map<String, dynamic>>> getOffersByRequest(int requestId) async {
-    await Future.delayed(const Duration(milliseconds: 700));
+    try {
+      final response = await _apiService.get('service-requests/$requestId');
 
-    final Map<int, List<Map<String, dynamic>>> fakeData = {
-      1: [
-        {
-          "id": 101,
-          "provider": "المهندس أحمد",
-          "details": "يمكنني اصلاح العطل بالسعر (40,000 ل.س)",
-          "rate": 4.8,
-          "status": "قيد الانتظار",
-        },
-        {
-          "id": 102,
-          "provider": "الفني خالد",
-          "details": "يمكنني اصلاح العطل بالسعر (135,000 ل.س)",
-          "rate": 4.5,
-          "status": "قيد الانتظار",
-        },
-        {
-          "id": 103,
-          "provider": "المهندس علي",
-          "details": "يمكنني اصلاح العطل بالسعر (150,000 ل.س)",
-          "rate": 4.2,
-          "status": "قيد الانتظار",
-        },
-      ],
-      2: [
-        {
-          "id": 201,
-          "provider": "المهندس عمر",
-          "details": "يمكنني اصلاح العطل بالسعر (70,000 ل.س)",
-          "rate": 4.7,
-          "status": "قيد الانتظار",
-        },
-        {
-          "id": 202,
-          "provider": "المهندس محمد",
-          "details": "يمكنني اصلاح العطل بالسعر (10,000 ل.س)",
-          "rate": 4.0,
-          "status": "قيد الانتظار",
-        },
-        {
-          "id": 203,
-          "provider": "المهندس عبدالله",
-          "details": "يمكنني اصلاح العطل بالسعر (25,000 ل.س)",
-          "rate": 4.6,
-          "status": "قيد الانتظار",
-        },
-      ],
-    };
-
-    return fakeData[requestId] ?? [];
+      if (response != null && response is Map && response.containsKey('data')) {
+        final data = response['data'];
+        if (data.containsKey('offers')) {
+          return List<Map<String, dynamic>>.from(data['offers']);
+        }
+      }
+      return [];
+    } on DioException catch (e) {
+      throw ApiException.handelError(e).message;
+    } catch (e) {
+      debugPrint("Error fetching offers: $e");
+      throw "فشل جلب العروض من الخادم";
+    }
   }
 
-  // ── Accept one offer → backend rejects all others automatically ──────────
-  Future<void> acceptOffer(int offerId, int requestId) async {
-    await Future.delayed(const Duration(milliseconds: 500));
+  // ── قبول العرض
+  Future<void> acceptOffer(int requestId, int offerId) async {
+    try {
+      String path = 'service-requests/$requestId/offers/$offerId/accept';
+
+      // إرسال طلب POST (بدون body لأن المسار يكفي بناءً على Postman)
+      await _apiService.post(path, {});
+    } catch (e) {
+      throw "فشل الاتصال بالخادم أثناء قبول العرض";
+    }
   }
 
-  // ── Reject one offer → disappears permanently ────────────────────────────
+  // ── رفض العرض (معالج في الواجهة فقط كما طلبت) ──────
   Future<void> rejectOffer(int offerId) async {
+    // يمكنك تركه كما هو أو إبقائه فارغاً
     await Future.delayed(const Duration(milliseconds: 400));
   }
 }

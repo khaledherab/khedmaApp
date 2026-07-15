@@ -25,7 +25,7 @@ class CategoryService {
             .map((item) => CategoriesModel.fromJson(item))
             .toList();
       } else {
-        throw Exception("شكل البيانات غير متوقع من السيرفر");
+        throw Exception("شكل البيانات غير متوقع من السيرفر ");
       }
     } on DioException catch (e) {
       final error = ApiException.handelError(e);

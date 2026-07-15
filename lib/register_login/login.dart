@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:graduation_project/components/button%20form.dart';
@@ -5,6 +6,7 @@ import 'package:graduation_project/components/image.dart';
 import 'package:graduation_project/components/text%20form.dart';
 import 'package:graduation_project/components/text%20form%20field.dart';
 import 'package:graduation_project/providers/auth_provider.dart';
+import 'package:graduation_project/providers/profile_provider.dart';
 import 'package:provider/provider.dart';
 
 class Login extends StatefulWidget {
@@ -19,20 +21,52 @@ class _Login extends State<Login> {
   // key
   final GlobalKey<FormState> formkey = GlobalKey<FormState>();
 
+  @override
+  void dispose() {
+    email.dispose();
+    password.dispose();
+    super.dispose();
+  }
+
   Future<void> login() async {
     context.read<AuthProvider>().clearError();
 
     if (!formkey.currentState!.validate()) return;
 
-    final success = await context.read<AuthProvider>().login(
+    final loginSuccess = await context.read<AuthProvider>().login(
       email: email.text.trim(),
       password: password.text,
     );
 
     if (!mounted) return;
 
-    if (success) {
-      // Navigator.of(context).pushReplacementNamed("home");
+    if (loginSuccess) {
+      final profileProvider = context.read<ProfileProvider>();
+      final profileSuccess = await profileProvider.realProfile();
+
+      if (!mounted) return;
+
+      if (profileSuccess) {
+        if (profileProvider.isProfessional) {
+          Navigator.of(context).pushReplacementNamed("professionalhomepage");
+        } else {
+          Navigator.of(context).pushReplacementNamed("customerhomepage");
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              profileProvider.errorMessage ?? "خطأ في جلب البيانات",
+            ),
+          ),
+        );
+      }
+    } else {
+      Future.delayed(Duration(seconds: 5), () {
+        if (mounted) {
+          context.read<AuthProvider>().clearError();
+        }
+      });
     }
   }
 
@@ -154,11 +188,15 @@ class _Login extends State<Login> {
                           ),
                         ),
                       Gap(15),
-                      ButtonForm(
-                        padding: EdgeInsets.symmetric(horizontal: 110),
-                        borderradius: BorderRadiusGeometry.circular(20),
-                        onPressed: provider.isLoading ? null : login,
-                        title: "تسجيل الدخول",
+                      Center(
+                        child: provider.isLoading
+                            ? CupertinoActivityIndicator(color: Colors.blue)
+                            : ButtonForm(
+                                padding: EdgeInsets.symmetric(horizontal: 110),
+                                borderradius: BorderRadiusGeometry.circular(20),
+                                onPressed: login,
+                                title: "تسجيل الدخول",
+                              ),
                       ),
                       Gap(10),
                     ],

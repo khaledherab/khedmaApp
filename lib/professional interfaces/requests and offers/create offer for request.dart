@@ -17,6 +17,7 @@ class CreateOfferForRequest extends StatefulWidget {
 class OfferDet extends State<CreateOfferForRequest> {
   final TextEditingController details = TextEditingController();
   final TextEditingController time = TextEditingController();
+  final TextEditingController price = TextEditingController();
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
@@ -32,6 +33,7 @@ class OfferDet extends State<CreateOfferForRequest> {
   void dispose() {
     details.dispose();
     time.dispose();
+    price.dispose();
     Future.microtask(() {
       provider.reset();
     });
@@ -39,32 +41,46 @@ class OfferDet extends State<CreateOfferForRequest> {
   }
 
   Future<void> submit() async {
-    context.read<CreateOfferProvider>().reset();
-
     if (!formKey.currentState!.validate()) return;
-
-    // احضار معرف الطلب الذي المهني يقدم عرض له
     final request = context.read<ProfessionalRequestsProvider>().selected;
+
     if (request == null) return;
-
-    await context.read<CreateOfferProvider>().submitOffer(
-      requestId: request['id'],
+    // احضار معرف الطلب الذي المهني يقدم عرض له
+    bool success = await context.read<CreateOfferProvider>().submitOffer(
+      requestId: request['request_id'],
       details: details.text.trim(),
-      estimatedTime: time.text.trim(),
+      duration: time.text.trim(),
+      price: price.text.trim(),
     );
-
-    if (!mounted) return;
-
-    final provider = context.read<CreateOfferProvider>();
-
-    if (provider.isSuccess) {
+    if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("تم إرسال العرض بنجاح ✓"),
-          backgroundColor: Color(0xFF2E7D32),
+        SnackBar(
+          content: Text(
+            "تم ارسال العرض للزبون",
+            textAlign: TextAlign.right,
+            style: TextStyle(fontFamily: 'Cairo'),
+          ),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
         ),
       );
-      Navigator.of(context).pop(); // go back to request details
+      details.clear();
+      time.clear();
+      price.clear();
+
+      Navigator.of(context).pop();
+    } else if (!success && mounted) {
+      // إظهار رسالة خطأ في حال فشل الإرسال لأي سبب
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.read<CreateOfferProvider>().errorMessage ??
+                "حدث خطأ أثناء إرسال العرض",
+            textAlign: TextAlign.right,
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -72,7 +88,6 @@ class OfferDet extends State<CreateOfferForRequest> {
   Widget build(BuildContext context) {
     final provider = context.watch<CreateOfferProvider>();
 
-    final request = context.watch<ProfessionalRequestsProvider>().selected;
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -99,48 +114,8 @@ class OfferDet extends State<CreateOfferForRequest> {
       body: Form(
         key: formKey,
         child: ListView(
-          padding: EdgeInsets.all(15),
+          padding: EdgeInsets.only(left: 8, right: 8, top: 0),
           children: [
-            Gap(10),
-            if (request != null)
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Color(0xFF1976D2),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    TextForm(
-                      text: request['title'] ?? '',
-                      size: 16,
-                      weight: FontWeight.bold,
-                      color: Colors.white,
-                      align: TextAlign.right,
-                    ),
-                    Gap(6),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextForm(
-                          text: request['location'] ?? '',
-                          size: 13,
-                          color: Colors.white70,
-                        ),
-                        Gap(4),
-                        Icon(
-                          Icons.location_on_outlined,
-                          color: Colors.white70,
-                          size: 14,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            Gap(15),
             Container(
               width: double.infinity,
               padding: EdgeInsets.all(15),
@@ -186,7 +161,7 @@ class OfferDet extends State<CreateOfferForRequest> {
                   ),
                   Gap(10),
                   CustomTextForm(
-                    hint: "",
+                    hint: "ساعة 3",
                     myController: time,
                     validator: (val) {
                       if (val == null || val.isEmpty) {
@@ -195,30 +170,33 @@ class OfferDet extends State<CreateOfferForRequest> {
                       return null;
                     },
                   ),
+                  Gap(15),
+                  TextForm(
+                    text: "السعر الاجمالي",
+                    size: 27,
+                    weight: FontWeight.bold,
+                  ),
+                  Gap(10),
+                  CustomTextForm(
+                    hint: "300 مثلاً",
+                    myController: price,
+                    validator: (val) {
+                      if (val == null || val.isEmpty) {
+                        return "مثال : ل.س 300 ";
+                      }
+                      return null;
+                    },
+                  ),
                 ],
               ),
             ),
             Gap(20),
-            if (provider.errorMessage != null)
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.red[50],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.red[200]!),
-                ),
-                child: TextForm(
-                  text: provider.errorMessage!,
-                  size: 18,
-                  align: TextAlign.right,
-                  color: Colors.red,
-                ),
-              ),
-            Gap(20),
+
+            if (provider.isSubmitting)
+              Center(child: CircularProgressIndicator()),
             Center(
               child: ButtonForm(
-                onPressed: provider.isSubmitting ? null : submit,
+                onPressed: submit,
                 title: "ارسال",
                 borderradius: BorderRadius.circular(15),
                 padding: EdgeInsets.symmetric(horizontal: 80),

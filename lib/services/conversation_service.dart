@@ -1,62 +1,45 @@
-// lib/services/conversations_service.dart
-
-import 'package:dio/dio.dart';
-import 'package:graduation_project/processing/dio_client.dart';
+import 'package:flutter/material.dart';
+import 'package:graduation_project/model/conversation_model.dart';
+import 'package:graduation_project/processing/helper.dart';
+import 'package:graduation_project/services/api_sercice.dart';
 
 class ConversationsService {
-  final Dio dio = DioClient().dio;
+  final ApiService _api = ApiService();
 
-  // ── Fetch all conversations for the logged-in user ─────────────────────────
-  // Laravel returns the "other person" based on who is logged in:
-  //   if user      → returns professional's name in other_person_name
-  //   if professional → returns user's name in other_person_name
   Future<List<Map<String, dynamic>>> getConversations() async {
-    await Future.delayed(const Duration(milliseconds: 700)); // fake loading
+    final response = await _api.get('chats');
 
-    // ── Fake data ──────────────────────────────────────────────────────────
-    // Change role field in ProfileService to test both views:
-    //   "user"         → sees professionals
-    //   "professional" → sees users
-    return [
-      {
-        "id": 1,
-        "request_id": 1,
-        "request_title": "إصلاح عطل كهربائي في المنزل",
-        "other_person_id": 10,
-        "other_person_name": "المهندس أحمد",
-        "last_message": "سأصل خلال ساعة إن شاء الله",
-        "last_message_at": "2026-06-01 10:30",
-        "unread_count": 2,
-      },
-      {
-        "id": 2,
-        "request_id": 2,
-        "request_title": "صيانة غسالة أوتوماتيك",
-        "other_person_id": 11,
-        "other_person_name": "الفني خالد",
-        "last_message": "تم الانتهاء من الإصلاح",
-        "last_message_at": "2026-05-31 14:15",
-        "unread_count": 0,
-      },
-      {
-        "id": 3,
-        "request_id": 3,
-        "request_title": "دهان غرفتين",
-        "other_person_id": 12,
-        "other_person_name": "المهندس علي",
-        "last_message": "ما هو لون الدهان المطلوب؟",
-        "last_message_at": "2026-05-30 09:00",
-        "unread_count": 1,
-      },
-    ];
+    if (response == null) {
+      throw Exception("الاستجابة فارغة من الخادم");
+    }
+
+    // ── Extract the chats array from { "message": "...", "chats": [...] } ──
+    final List<dynamic> chats;
+    if (response is Map && response.containsKey('chats')) {
+      chats = response['chats'] as List<dynamic>;
+    } else if (response is List) {
+      chats = response;
+    } else {
+      throw Exception("شكل الاستجابة غير متوقع: ${response.runtimeType}");
+    }
+
+    // جلب معرف الذي مسجل دخول لمعرفة من هو الطرف الاخر
+    final int loggedInUserId = await PrefHelper.getUserId() ?? 0;
+
+    debugPrint("ConversationsService: loggedInUserId = $loggedInUserId");
+    debugPrint("ConversationsService: ${chats.length} conversations received");
+
+    return chats
+        .map(
+          (chat) => ConversationModel.fromJson(
+            Map<String, dynamic>.from(chat as Map),
+            loggedInUserId,
+          ).toMap(),
+        )
+        .toList();
   }
 
-  // ── Error handler ──────────────────────────────────────────────────────────
-  String handleError(DioException e) {
-    if (e.type == DioExceptionType.connectionTimeout)
-      return "انتهت مهلة الاتصال";
-    if (e.response?.statusCode == 401) return "غير مصرح، سجّل دخولك مجدداً";
-    if (e.response?.statusCode == 500) return "خطأ في الخادم، حاول لاحقاً";
-    return "حدث خطأ غير متوقع";
+  Future<void> markAsRead(int conversationId) async {
+    await _api.post('chats/$conversationId/read', {});
   }
 }

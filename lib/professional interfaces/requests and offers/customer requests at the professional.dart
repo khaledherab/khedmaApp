@@ -21,7 +21,7 @@ class Requests extends State<Requests_at_the_Professional> {
     super.initState();
 
     Future.microtask(
-      () => context.read<ProfessionalRequestsProvider>().fetchRequests(),
+      () => context.read<ProfessionalRequestsProvider>().realRequests(),
     );
   }
 
@@ -34,24 +34,19 @@ class Requests extends State<Requests_at_the_Professional> {
       ),
       child: Column(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            child: Image.network(
-              request['imageUrl'],
-              height: 160,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stacktrack) => Container(
+          //  يتم عرض الصورة فقط إذا كانت موجودة
+          if (request['photo'] != null)
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
+              child: Image.network(
+                request['photo'], // المفتاح الصحيح من الـ API
                 height: 160,
-                color: Color(0xFFE3F2FD),
-                child: Icon(
-                  Icons.image_not_supported_outlined,
-                  color: Colors.grey,
-                  size: 48,
-                ),
+                width: double.infinity,
+                fit: BoxFit.cover,
               ),
             ),
-          ),
 
           Padding(
             padding: EdgeInsets.fromLTRB(14, 12, 14, 10),
@@ -72,7 +67,7 @@ class Requests extends State<Requests_at_the_Professional> {
                         ),
                         Gap(4),
                         TextForm(
-                          text: request['date'],
+                          text: request['created_at'] ?? '',
                           size: 15,
                           color: Colors.grey,
                         ),
@@ -82,7 +77,7 @@ class Requests extends State<Requests_at_the_Professional> {
                     Row(
                       children: [
                         TextForm(
-                          text: request['name'],
+                          text: request['customer'] ?? '',
                           size: 20,
                           weight: FontWeight.bold,
                           color: Color(0xFF0D47A1),
@@ -106,21 +101,19 @@ class Requests extends State<Requests_at_the_Professional> {
                 Divider(color: Color(0xFFE3F2FD)),
                 Gap(6),
 
-                // details
                 TextForm(
-                  text: request['details'],
+                  text: request['description'] ?? '',
                   align: TextAlign.right,
                   size: 20,
                 ),
 
                 Gap(8),
 
-                // location
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextForm(
-                      text: request['location'],
+                      text: request['location'] ?? '',
                       size: 17,
                       color: Colors.grey[700],
                     ),
@@ -136,7 +129,6 @@ class Requests extends State<Requests_at_the_Professional> {
             ),
           ),
 
-          // ── Bottom: details button ─────────────────────────────────────────
           Padding(
             padding: EdgeInsets.fromLTRB(14, 0, 14, 14),
             child: ButtonForm(
@@ -190,7 +182,7 @@ class Requests extends State<Requests_at_the_Professional> {
           ? AppStates.buildErrorState(
               provider.errorMessage!,
               onRetry: () =>
-                  context.read<ProfessionalRequestsProvider>().fetchRequests(),
+                  context.read<ProfessionalRequestsProvider>().realRequests(),
             )
           : provider.requests.isEmpty
           ? AppStates.buildEmptyState(
@@ -198,7 +190,7 @@ class Requests extends State<Requests_at_the_Professional> {
               icon: Icons.inbox_outlined,
             )
           : ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 30),
+              padding: EdgeInsets.fromLTRB(16, 20, 16, 30),
               itemCount: provider.requests.length,
               itemBuilder: (context, index) =>
                   buildRequestCard(provider.requests[index]),

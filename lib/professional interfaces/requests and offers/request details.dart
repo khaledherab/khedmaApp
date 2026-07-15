@@ -51,24 +51,17 @@ class RequestDetails extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Image.network(
-              order['imageUrl'],
-              width: double.infinity,
-              height: 230,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
+          if (order['photo'] != null)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Image.network(
+                order['photo'],
+                width: double.infinity,
                 height: 230,
-                color: Colors.grey[200],
-                child: Icon(
-                  Icons.image_not_supported_outlined,
-                  size: 50,
-                  color: Colors.grey,
-                ),
+                fit: BoxFit.cover,
               ),
             ),
-          ),
+
           Gap(20),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -78,7 +71,7 @@ class RequestDetails extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextForm(
-                    text: order['name'],
+                    text: order['customer'],
                     size: 22,
                     weight: FontWeight.bold,
                     color: Color(0xFF0D47A1),
@@ -120,7 +113,7 @@ class RequestDetails extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextForm(
-                    text: order['date'],
+                    text: order['created_at'],
                     size: 16,
                     color: Colors.grey[500],
                   ),
@@ -138,7 +131,6 @@ class RequestDetails extends StatelessWidget {
               Divider(color: Color(0xFFE3F2FD)),
               Gap(10),
 
-              // problem description
               TextForm(
                 text: "وصف المشكلة",
                 weight: FontWeight.bold,
@@ -147,7 +139,7 @@ class RequestDetails extends StatelessWidget {
               ),
               Gap(10),
               TextForm(
-                text: order['details'],
+                text: order['description'],
                 size: 20,
                 align: TextAlign.right,
               ),
@@ -157,10 +149,7 @@ class RequestDetails extends StatelessWidget {
           Gap(24),
           ButtonForm(
             onPressed: () {
-              Navigator.pushNamed(
-                context,
-                "createofferforrequest",
-              ); ///////////////////////////////////////////
+              Navigator.pushNamed(context, "createofferforrequest");
             },
             color: Color(0xFF1976D2),
             height: 50,

@@ -13,9 +13,7 @@ class CategoryProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
-  // دالة جلب التصنيفات
   Future<void> loadCategories({bool forceRefresh = false}) async {
-    // التحقق مما اذا كانت البيانات موجودة او انه يقوم بالتحميل
     if ((_categories.isNotEmpty && !forceRefresh) || _isLoading) return;
     _isLoading = true;
     _errorMessage = null;

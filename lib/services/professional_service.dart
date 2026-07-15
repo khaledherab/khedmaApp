@@ -1,182 +1,26 @@
 // مقدمين الخدمة الموجودين في التطبيق
 // يعرض المهنيين حسب التصنيف
 
+import 'package:dio/dio.dart';
+import 'package:graduation_project/services/api_sercice.dart'; // تأكد من استيراد مكتبة الاتصال الخاصة بك
+
 class ProfessionalsService {
+  final ApiService _apiService = ApiService();
+
   Future<List<Map<String, dynamic>>> getProfessionalsByCategory(
-    String category,
+    String categoryId,
   ) async {
-    await Future.delayed(const Duration(milliseconds: 700)); // fake loading
+    try {
+      final formData = FormData.fromMap({'category_id': categoryId});
 
-    final Map<String, List<Map<String, dynamic>>> fakeData = {
-      "كهرباء": [
-        {
-          "id": 1,
-          "name": "أحمد الكهربائي",
-          "rate": 4.8,
-          "description":
-              "وصف عن المهنة وصف عن المهنة وصف عن المهنة وصف عن المهنة ",
-          "experience": "5 سنوات",
-        },
-        {
-          "id": 2,
-          "name": "خالد النور",
-          "rate": 4.5,
-          "description":
-              "وصف عن المهنة وصف عن المهنة وصف عن المهنة وصف عن المهنة ",
-          "experience": "3 سنوات",
-        },
-      ],
-      "سباكة": [
-        {
-          "id": 3,
-          "name": "محمد السباك",
-          "rate": 4.7,
-          "description":
-              "وصف عن المهنة وصف عن المهنة وصف عن المهنة وصف عن المهنة ",
-          "experience": "7 سنوات",
-        },
-        {
-          "id": 4,
-          "name": "علي الماء",
-          "rate": 4.2,
-          "description":
-              "وصف عن المهنة وصف عن المهنة وصف عن المهنة وصف عن المهنة ",
-          "experience": "2 سنوات",
-        },
-      ],
-      "نجار": [
-        {
-          "id": 5,
-          "name": "عمر النجار",
-          "rate": 4.9,
-          "description":
-              "وصف عن المهنة وصف عن المهنة وصف عن المهنة وصف عن المهنة ",
-          "experience": "10 سنوات",
-        },
-      ],
-      "حدادة": [
-        {
-          "id": 6,
-          "name": "علي الحداد",
-          "rate": 4.9,
-          "description":
-              "وصف عن المهنة وصف عن المهنة وصف عن المهنة وصف عن المهنة ",
-          "experience": "10 سنوات",
-        },
-      ],
-      "دهان": [
-        {
-          "id": 7,
-          "name": " عبدالله محمود",
-          "rate": 4.9,
-          "description":
-              "وصف عن المهنة وصف عن المهنة وصف عن المهنة وصف عن المهنة ",
-          "experience": "10 سنوات",
-        },
-      ],
-      "تبريدوتكييف": [
-        {
-          "id": 8,
-          "name": "فادي عطار",
-          "rate": 4.9,
-          "description":
-              "وصف عن المهنة وصف عن المهنة وصف عن المهنة وصف عن المهنة ",
-          "experience": "10 سنوات",
-        },
-      ],
-      "تنظيف": [
-        {
-          "id": 9,
-          "name": " زين النظيف",
-          "rate": 4.9,
-          "description":
-              "وصف عن المهنة وصف عن المهنة وصف عن المهنة وصف عن المهنة ",
-          "experience": "10 سنوات",
-        },
-      ],
-      "نقل اثاث": [
-        {
-          "id": 10,
-          "name": "عدي علي",
-          "rate": 4.9,
-          "description":
-              "وصف عن المهنة وصف عن المهنة وصف عن المهنة وصف عن المهنة ",
-          "experience": "10 سنوات",
-        },
-      ],
-      "تركيب كاميرات": [
-        {
-          "id": 11,
-          "name": "محمد مهنس",
-          "rate": 4.9,
-          "description":
-              "وصف عن المهنة وصف عن المهنة وصف عن المهنة وصف عن المهنة ",
-          "experience": "10 سنوات",
-        },
-      ],
-      "تركيب انترنت": [
-        {
-          "id": 12,
-          "name": "شادي نت",
-          "rate": 4.9,
-          "description":
-              "وصف عن المهنة وصف عن المهنة وصف عن المهنة وصف عن المهنة ",
-          "experience": "10 سنوات",
-        },
-      ],
-      "تنسيق حدائق": [
-        {
-          "id": 13,
-          "name": "صابر طباخ",
-          "rate": 4.9,
-          "description":
-              "وصف عن المهنة وصف عن المهنة وصف عن المهنة وصف عن المهنة ",
-          "experience": "10 سنوات",
-        },
-      ],
-      "تعقيم": [
-        {
-          "id": 14,
-          "name": "رائد علي",
-          "rate": 4.9,
-          "description":
-              "وصف عن المهنة وصف عن المهنة وصف عن المهنة وصف عن المهنة ",
-          "experience": "10 سنوات",
-        },
-      ],
-      "نقل عام": [
-        {
-          "id": 15,
-          "name": "ثائر سيارة",
-          "rate": 4.9,
-          "description":
-              "وصف عن المهنة وصف عن المهنة وصف عن المهنة وصف عن المهنة ",
-          "experience": "10 سنوات",
-        },
-      ],
-      "غسيل سيارات": [
-        {
-          "id": 16,
-          "name": "خالد هادي",
-          "rate": 4.9,
-          "description":
-              "وصف عن المهنة وصف عن المهنة وصف عن المهنة وصف عن المهنة ",
-          "experience": "10 سنوات",
-        },
-      ],
-      "تركيب زجاج": [
-        {
-          "id": 5,
-          "name": "هاشم بلور",
-          "rate": 4.9,
-          "description":
-              "وصف عن المهنة وصف عن المهنة وصف عن المهنة وصف عن المهنة ",
-          "experience": "10 سنوات",
-        },
-      ],
-      // add the rest of your categories the same way ...
-    };
+      final response = await _apiService.post('professionals', formData);
 
-    return fakeData[category] ?? [];
+      if (response != null && response is List) {
+        return List<Map<String, dynamic>>.from(response);
+      }
+      return [];
+    } catch (e) {
+      throw "فشل جلب المختصين من الخادم";
+    }
   }
 }

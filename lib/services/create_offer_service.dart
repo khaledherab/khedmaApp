@@ -1,12 +1,21 @@
 // لارسال تفاصيل العرض الى قاعدة البيانات
 
+import 'package:graduation_project/services/api_sercice.dart';
+
 class CreateOfferService {
-  // ارسال العرض الى طلب محدد -------------------------------
-  Future<void> submitOffer({
+  final ApiService _apiService = ApiService();
+
+  Future<dynamic> submitOffer({
     required int requestId,
     required String details,
-    required String estimatedTime,
+    required String duration,
+    required String price,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 800));
+    // الرابط الصحيح حسب الـ Postman
+    return await _apiService.post('service-requests/$requestId/offers', {
+      'description': details,
+      'duration': duration,
+      'price': price,
+    });
   }
 }

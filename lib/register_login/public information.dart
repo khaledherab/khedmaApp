@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:graduation_project/components/button%20form.dart';
@@ -43,35 +44,53 @@ class _RegisterInformation extends State<RegisterInformation> {
   Future<void> submit() async {
     setState(() => submitted = true);
     context.read<AuthProvider>().clearError();
-
-    // التحقق من انه تم اختيار الدور
     if (role == null) return;
 
     // التحقق من المدينة
     // if (role == "user" && city.text.isEmpty) return;///////////////////////
 
     // if (!formkey.currentState!.validate()) return;///////////////////////////////////// الغاء التعليق عند الربط
+    final authProvider = context.read<AuthProvider>();
+    final locationProvider = context.read<LocationProvider>();
 
-    final locationprovider = context.read<LocationProvider>();
+    authProvider.registerData.phone = phone.text.trim();
+    authProvider.registerData.role = role!;
+    authProvider.registerData.governorateId = locationProvider
+        .selectgovernorate
+        ?.id
+        .toString();
 
-    final success = await context.read<AuthProvider>().saveUserInfo(
-      phone: phone.text.trim(),
-      role: role!,
-      governorateId: locationprovider.selectgovernorate?.id.toString() ?? "",
-      cityId: role == "user"
-          ? locationprovider.selectcities?.id.toString()
-          : null,
-    );
+    if (role == "customer") {
+      authProvider.registerData.cityId = locationProvider.selectcities!.id
+          .toString();
+    } else {
+      // في حال كان مهني، نفرغ المدينة للتأكد من عدم إرسال بيانات خاطئة
+      authProvider.registerData.cityId = null;
+    }
+
+    final success = await authProvider.submitStep2();
 
     if (!mounted) return;
 
     if (success) {
+      debugPrint(
+        "تم ارسال المعلومات بنجاح ======================= تفعيل الانتقال ",
+      );
       // الانتقال على حسب الدور
       if (role == "professional") {
         Navigator.of(context).pushReplacementNamed("otherinformation");
       } else {
         Navigator.of(context).pushReplacementNamed("customerhomepage");
       }
+    } else {
+      debugPrint(
+        "حدث خطأ في اريال المعلومات , الخطأ في ال AuthProvider او في ال AuthRepo================",
+      );
+      Future.delayed(Duration(seconds: 2), () {
+        if (mounted) {
+          context.read<AuthProvider>().clearError();
+        }
+      });
     }
   }
 
@@ -103,7 +122,7 @@ class _RegisterInformation extends State<RegisterInformation> {
                 city.text = selectCityName;
               },
               validator: (val) {
-                if (role == "user" && (val == null || val.isEmpty))
+                if (role == "customer" && (val == null || val.isEmpty))
                   return "يرجى اختيار المدينة";
                 return null;
               },
@@ -204,7 +223,7 @@ class _RegisterInformation extends State<RegisterInformation> {
                       align: TextAlign.end,
                       size: 22,
                     ),
-                    value: "user",
+                    value: "customer",
                     groupValue: role,
                     onChanged: (value) {
                       setState(() {
@@ -276,7 +295,7 @@ class _RegisterInformation extends State<RegisterInformation> {
                   ),
 
                   Gap(10),
-                  if (role == "user") cityfield(),
+                  if (role == "customer") cityfield(),
 
                   Gap(15),
                   // عرض الاخطاء ان وجدت
@@ -302,12 +321,14 @@ class _RegisterInformation extends State<RegisterInformation> {
 
                   Gap(15),
                   Center(
-                    child: ButtonForm(
-                      padding: EdgeInsets.symmetric(horizontal: 130),
-                      borderradius: BorderRadiusGeometry.circular(20),
-                      onPressed: provider.isLoading ? null : submit,
-                      title: "متابعة",
-                    ),
+                    child: provider.isLoading
+                        ? CupertinoActivityIndicator(color: Colors.blue)
+                        : ButtonForm(
+                            padding: EdgeInsets.symmetric(horizontal: 130),
+                            borderradius: BorderRadiusGeometry.circular(20),
+                            onPressed: submit,
+                            title: "متابعة",
+                          ),
                   ),
                   Gap(30),
                 ],

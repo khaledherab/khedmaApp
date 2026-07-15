@@ -24,12 +24,15 @@ class _OffersScreenState extends State<OffersScreen> {
   void initState() {
     super.initState();
     Future.microtask(
-      () => context.read<OffersProvider>().fetchOffers(widget.request['id']),
+      () => context.read<OffersProvider>().showOffers(
+        widget.request['request_id'],
+      ),
     );
   }
 
   // رسالة الرفض ----------------------------
   void confirmReject(Map<String, dynamic> offer) {
+    final provider = context.read<OffersProvider>();
     QuickAlert.show(
       context: context,
       type: QuickAlertType.confirm,
@@ -40,39 +43,54 @@ class _OffersScreenState extends State<OffersScreen> {
       confirmBtnColor: Color(0xFF1976D2),
 
       barrierDismissible: false,
-      onConfirmBtnTap: () {
-        Navigator.pop(context); // اغلاق الرسالة بعد تأكيد الرفض
-        context.read<OffersProvider>().rejectOffer(offer['id']);
+      onConfirmBtnTap: () async {
+        Navigator.pop(context);
+
+        try {
+          await provider.acceptOffer(
+            offer['offer_id'],
+            widget.request['request_id'],
+          );
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(provider.errorMessage ?? "حدث خطأ ما")),
+          );
+        }
+        context.read<OffersProvider>().rejectOffer(offer['offer_id']);
       },
     );
   }
 
   // رسالة القبول --------------------------
   void confirmAccept(Map<String, dynamic> offer) {
+    String providerName = offer['professional'] != null
+        ? offer['professional']['name']
+        : 'المهني';
     QuickAlert.show(
       context: context,
       type: QuickAlertType.confirm,
       title: "تأكيد القبول",
       text:
-          "هل تريد قبول عرض ${offer['provider']}؟\nسيتم رفض جميع العروض الأخرى تلقائياً.",
+          "هل تريد قبول عرض ${providerName}؟\nسيتم رفض جميع العروض الأخرى تلقائياً.",
       confirmBtnText: "قبول ",
       cancelBtnText: "إلغاء",
-      confirmBtnColor: const Color(0xFF2E7D32),
+      confirmBtnColor: Color(0xFF2E7D32),
       barrierDismissible: false,
       onConfirmBtnTap: () async {
         Navigator.pop(context); // اغلاق الرسالة بعد تأكيد القبول
 
         await context.read<OffersProvider>().acceptOffer(
-          offer['id'],
-          widget.request['id'],
+          offer['offer_id'],
+          widget.request['request_id'],
         );
 
         if (!mounted) return;
 
         // حذف الطلب من صفحة الطلبات -----------------
-        context.read<RequestsProvider>().removeRequest(widget.request['id']);
+        context.read<RequestsProvider>().removeRequest(
+          widget.request['request_id'],
+        );
 
-        //
         QuickAlert.show(
           context: context,
           type: QuickAlertType.success,
@@ -91,39 +109,29 @@ class _OffersScreenState extends State<OffersScreen> {
     );
   }
 
-  Widget buildErrorState(String message) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 72, color: Colors.red[200]),
-          Gap(16),
-          Text(
-            message,
-            style: TextStyle(fontSize: 16, color: Colors.grey[500]),
-          ),
-          Gap(20),
-          ElevatedButton(
-            onPressed: () => context.read<OffersProvider>().fetchOffers(
-              widget.request['id'],
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFF1976D2),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text("إعادة المحاولة"),
-          ),
-        ],
-      ),
-    );
-  }
-
   // بطاقة العرض  ------------------------
   Widget buildOfferCard(Map<String, dynamic> offer) {
     final provider = context.watch<OffersProvider>();
+
+    final Map<String, dynamic>? professional = offer['professional'];
+    final String providerName = professional != null
+        ? professional['name']
+        : 'اسم غير متوفر';
+
+    final double rating = professional != null && professional['rating'] != null
+        ? double.parse(professional['rating'].toString())
+        : 4.5;
+
+    final String price = offer['price'] != null
+        ? double.parse(offer['price'].toString()).toString()
+        : '0';
+
+    final String description = offer['description'];
+
+    final String duration = offer['duration'];
+
+    // دمج التفاصيل مع السعر
+    final String formattedOfferText = "$description بالسعر ($price ل.س)";
     return Container(
       margin: EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
@@ -135,7 +143,6 @@ class _OffersScreenState extends State<OffersScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            // ── Provider name + rating ──
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -147,8 +154,8 @@ class _OffersScreenState extends State<OffersScreen> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    "${offer['rate']}",
-                    style: const TextStyle(
+                    "$rating",
+                    style: TextStyle(
                       color: Colors.orange,
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
@@ -159,7 +166,7 @@ class _OffersScreenState extends State<OffersScreen> {
                 Row(
                   children: [
                     TextForm(
-                      text: offer['provider'],
+                      text: providerName,
                       size: 17,
                       weight: FontWeight.bold,
                       color: Color(0xFF0D47A1),
@@ -185,10 +192,28 @@ class _OffersScreenState extends State<OffersScreen> {
 
             // تفاصيل العرض -----------------
             TextForm(
-              text: offer['details'],
+              text: formattedOfferText,
               align: TextAlign.right,
               size: 18,
               color: Colors.grey[700],
+            ),
+            Gap(8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextForm(
+                  text: "وقت الإنجاز المقدر: $duration",
+                  size: 14,
+                  color: const Color(0xFF1976D2), // إعطاءه لون أزرق لتمييزه
+                  weight: FontWeight.bold,
+                ),
+                const Gap(6),
+                const Icon(
+                  Icons.timer_outlined,
+                  size: 18,
+                  color: Color(0xFF1976D2),
+                ),
+              ],
             ),
 
             Gap(14),
@@ -206,7 +231,7 @@ class _OffersScreenState extends State<OffersScreen> {
                   color: Color(0xFF1976D2),
                 ),
                 ButtonForm(
-                  onPressed: (provider.isAccepting || provider.isRejecting)
+                  onPressed: context.watch<OffersProvider>().isAccepting
                       ? null
                       : () => confirmAccept(offer),
                   title: "قبول العرض",
@@ -225,13 +250,18 @@ class _OffersScreenState extends State<OffersScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<OffersProvider>();
-    final String title = widget.request['title'] ?? '';
-    final String date = widget.request['date'] ?? '';
+    final String title =
+        widget.request['description'] ??
+        widget.request['details'] ??
+        'تفاصيل الطلب';
+    final String date = widget.request['created_at'] != null
+        ? widget.request['created_at'].toString().substring(0, 10)
+        : (widget.request['date'] ?? '');
 
     return Scaffold(
       backgroundColor: AppColor.backgroundcolor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1976D2),
+        backgroundColor: Color(0xFF1976D2),
         automaticallyImplyLeading: false,
         centerTitle: true,
         title: TextForm(
@@ -243,7 +273,7 @@ class _OffersScreenState extends State<OffersScreen> {
         actions: [
           IconButton(
             iconSize: 28,
-            icon: const Icon(Icons.arrow_forward_rounded),
+            icon: Icon(Icons.arrow_forward_rounded),
             onPressed: () => Navigator.of(context).pop(),
           ),
         ],
@@ -266,8 +296,7 @@ class _OffersScreenState extends State<OffersScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    provider
-                            .hasAcceptedOffer ///////////////////////////////////////////////////////////////
+                    provider.isAccepting
                         ? Container(
                             padding: EdgeInsets.symmetric(
                               horizontal: 12,
@@ -345,14 +374,14 @@ class _OffersScreenState extends State<OffersScreen> {
                 : provider.errorMessage != null
                 ? AppStates.buildErrorState(
                     provider.errorMessage!,
-                    onRetry: () => context.read<OffersProvider>().fetchOffers(
-                      widget.request['id'],
+                    onRetry: () => context.read<OffersProvider>().showOffers(
+                      widget.request['request_id'],
                     ),
                   )
-                : provider.offers.isEmpty && !provider.hasAcceptedOffer
+                : provider.offers.isEmpty && !provider.isAccepting
                 ? AppStates.buildEmptyState("لا توجد عروض لهذا الطلب")
                 : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 30),
+                    padding: EdgeInsets.fromLTRB(16, 0, 16, 30),
                     itemCount: provider.offers.length,
                     itemBuilder: (context, index) =>
                         buildOfferCard(provider.offers[index]),

@@ -2,31 +2,31 @@
 
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:graduation_project/model/request_service_model.dart';
 import 'package:graduation_project/services/create_service_request_service.dart';
 
 class ServiceRequestProvider extends ChangeNotifier {
   final ServiceRequestService _service = ServiceRequestService();
 
-  File? selectedImage; // image picked by the user
+  File? selectedImage;
   bool isSubmitting = false;
   bool isSuccess = false;
   String? errorMessage;
+  ServiceRequestModel? createdRequest;
 
-  // ── Pick image from camera or gallery
   void setImage(File image) {
     selectedImage = image;
     errorMessage = null;
     notifyListeners();
   }
 
-  // ── Remove the selected image
   void removeImage() {
     selectedImage = null;
     notifyListeners();
   }
 
   Future<void> submitRequest({
-    required String category,
+    required int categoryId,
     required String address,
     required String details,
   }) async {
@@ -36,15 +36,15 @@ class ServiceRequestProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _service.createRequest(
-        category: category,
+      createdRequest = await _service.createRequest(
+        categoryId: categoryId,
         address: address,
-        details: details,
-        image: selectedImage, // null if user didn't pick one
+        description: details,
+        photo: selectedImage,
       );
 
       isSuccess = true;
-      selectedImage = null; // clear after success
+      selectedImage = null;
     } catch (e) {
       errorMessage = "فشل إرسال الطلب، حاول مجدداً";
     } finally {
@@ -58,6 +58,7 @@ class ServiceRequestProvider extends ChangeNotifier {
     isSubmitting = false;
     isSuccess = false;
     errorMessage = null;
+    createdRequest = null;
     notifyListeners();
   }
 }

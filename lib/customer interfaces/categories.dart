@@ -60,7 +60,7 @@ class _Categories extends State<Categories> {
                   TextForm(
                     text: categorypro.errorMessage!,
                     size: 22,
-                    color: Colors.red,
+                    color: Colors.red[400],
                   ),
                   Gap(10),
                   ElevatedButton(

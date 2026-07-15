@@ -11,8 +11,7 @@ class RequestsProvider extends ChangeNotifier {
   bool isLoading = false;
   String? errorMessage;
 
-  // اظهار الطلبات ---------------------
-  Future<void> fetchRequests() async {
+  Future<void> Requests() async {
     isLoading = true;
     errorMessage = null;
     notifyListeners();
@@ -20,22 +19,20 @@ class RequestsProvider extends ChangeNotifier {
     try {
       requests = await _service.getRequests();
     } catch (e) {
-      errorMessage = "فشل تحميل الطلبات";
+      errorMessage = e.toString();
     } finally {
       isLoading = false;
       notifyListeners();
     }
   }
 
-  // حذف الطلبات بعد قبول عرض واحد ---------------------
   void removeRequest(int requestId) {
-    requests.removeWhere((r) => r['id'] == requestId);
-    notifyListeners(); // ← requests page rebuilds instantly
+    requests.removeWhere((r) => r['request_id'] == requestId);
+    notifyListeners();
   }
 
-  // تحديث اشارة عدد العروض -------------
   void updateOffersCount(int requestId, int count) {
-    final index = requests.indexWhere((r) => r['id'] == requestId);
+    final index = requests.indexWhere((r) => r['request_id'] == requestId);
     if (index != -1) {
       requests[index]['offers_count'] = count;
       notifyListeners();

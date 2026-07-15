@@ -17,9 +17,9 @@ class _ShowProfessionalsState extends State<ShowProfessionals> {
   @override
   void initState() {
     super.initState();
-    // fetch professionals for THIS category when page opens
+
     Future.microtask(
-      () => context.read<ProfessionalsProvider>().fetchProfessionals(
+      () => context.read<ProfessionalsProvider>().showProfessionals(
         widget.category,
       ),
     );
@@ -60,7 +60,7 @@ class _ShowProfessionalsState extends State<ShowProfessionals> {
               provider.errorMessage!,
               onRetry: () => context
                   .read<ProfessionalsProvider>()
-                  .fetchProfessionals(widget.category),
+                  .showProfessionals(widget.category),
             )
           : provider.professionals.isEmpty
           ? AppStates.buildEmptyState(
@@ -77,6 +77,14 @@ class _ShowProfessionalsState extends State<ShowProfessionals> {
   }
 
   Widget buildProfessionalCard(Map<String, dynamic> professional) {
+    final String name = professional['name'];
+    final String bio = professional['bio'];
+    final String rating = professional['average_rating'] != null
+        ? professional['average_rating'].toString()
+        : '4.5';
+    final String experience = professional['experience_years'] != null
+        ? "${professional['experience_years']} سنوات خبرة"
+        : "";
     return Container(
       margin: EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
@@ -101,22 +109,18 @@ class _ShowProfessionalsState extends State<ShowProfessionals> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     TextForm(
-                      text: professional['name'],
+                      text: name,
                       size: 20,
                       color: Color(0xFF0D47A1),
                       weight: FontWeight.bold,
                     ),
-                    TextForm(
-                      text: professional['description'],
-                      size: 17,
-                      align: TextAlign.right,
-                    ),
+                    TextForm(text: bio, size: 17, align: TextAlign.right),
                     Gap(10),
                     Row(
                       children: [
                         Spacer(),
                         TextForm(
-                          text: "${professional['rate']}",
+                          text: rating,
                           weight: FontWeight.bold,
                           size: 15,
                         ),
@@ -127,7 +131,7 @@ class _ShowProfessionalsState extends State<ShowProfessionals> {
                           size: 15,
                         ),
                         Gap(10),
-                        TextForm(text: professional['experience'], size: 15),
+                        TextForm(text: experience, size: 15),
                       ],
                     ),
                   ],

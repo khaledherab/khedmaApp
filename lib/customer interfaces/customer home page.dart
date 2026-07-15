@@ -15,7 +15,7 @@ class _CustomerHomePage extends State<CustomerHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      //const Color(0xFFE3F2FD)
+
       appBar: AppBar(
         actionsPadding: EdgeInsets.only(right: 5),
         backgroundColor: Colors.white,
@@ -33,7 +33,7 @@ class _CustomerHomePage extends State<CustomerHomePage> {
               icon: Icon(
                 Icons.message_rounded,
                 size: 25,
-                color: const Color.fromARGB(255, 59, 115, 160),
+                color: Color.fromARGB(255, 59, 115, 160),
               ),
             ),
           ),
@@ -50,7 +50,7 @@ class _CustomerHomePage extends State<CustomerHomePage> {
               icon: Icon(
                 Icons.notifications,
                 size: 25,
-                color: const Color.fromARGB(255, 59, 115, 160),
+                color: Color.fromARGB(255, 59, 115, 160),
               ),
             ),
           ),
@@ -60,7 +60,7 @@ class _CustomerHomePage extends State<CustomerHomePage> {
             },
             icon: Icon(
               Icons.settings,
-              color: const Color.fromARGB(255, 59, 115, 160),
+              color: Color.fromARGB(255, 59, 115, 160),
             ),
           ),
         ],
@@ -75,7 +75,7 @@ class _CustomerHomePage extends State<CustomerHomePage> {
           ),
           Gap(40),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 50),
+            padding: EdgeInsets.symmetric(horizontal: 50),
             child: ButtonForm(
               onPressed: () {
                 Navigator.of(context).pushNamed("service_request");

@@ -16,7 +16,7 @@ class _BalanceState extends State<Balance> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => context.read<BalanceProvider>().fetchWalletData());
+    Future.microtask(() => context.read<BalanceProvider>().WalletData());
   }
 
   @override
@@ -50,7 +50,7 @@ class _BalanceState extends State<Balance> {
           : provider.errorMessage != null
           ? AppStates.buildErrorState(
               provider.errorMessage!,
-              onRetry: () => context.read<BalanceProvider>().fetchWalletData(),
+              onRetry: () => context.read<BalanceProvider>().WalletData(),
             )
           : Padding(
               padding: const EdgeInsets.all(15),
@@ -81,46 +81,83 @@ class _BalanceState extends State<Balance> {
                   ),
                   Gap(10),
                   Divider(),
-                  TextForm(
-                    text: "عمليات السحب والايداع",
-                    size: 30,
-                    weight: FontWeight.bold,
-                  ),
-                  Gap(10),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: provider.transactions.length,
-                      itemBuilder: (context, index) {
-                        final transaction = provider.transactions[index];
-                        final isDeposit = transaction["type"] == "إيداع";
-                        return Card(
-                          elevation: 3,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(13),
-                          ),
-                          child: ListTile(
-                            title: TextForm(
-                              size: 30,
-                              text: transaction['type']!,
-                              weight: FontWeight.bold,
-                              align: TextAlign.right,
-                              color: isDeposit ? Colors.green : Colors.red,
-                            ),
-                            leading: TextForm(
-                              text: transaction['date']!,
-                              color: Colors.grey,
-                            ),
-                            subtitle: TextForm(
-                              text: transaction['amount']!,
-                              size: 20,
-                              weight: FontWeight.w600,
-                              align: TextAlign.right,
+                  // التحقق من وجود عمليات
+                  provider.transactions.isEmpty
+                      ? Expanded(
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.history,
+                                  size: 60,
+                                  color: Colors.grey[400],
+                                ),
+                                Gap(10),
+                                TextForm(
+                                  text: "لا يوجد عمليات لديك",
+                                  size: 20,
+                                  color: Colors.grey[600],
+                                ),
+                              ],
                             ),
                           ),
-                        );
-                      },
-                    ),
-                  ),
+                        )
+                      : Expanded(
+                          child: Column(
+                            children: [
+                              // العنوان يظهر فقط إذا كان هناك بيانات
+                              TextForm(
+                                text: "عمليات السحب والايداع",
+                                size: 30,
+                                weight: FontWeight.bold,
+                              ),
+                              Gap(10),
+                              // القائمة
+                              Expanded(
+                                child: ListView.builder(
+                                  itemCount: provider.transactions.length,
+                                  itemBuilder: (context, index) {
+                                    final transaction =
+                                        provider.transactions[index];
+                                    // التحقق من النوع بناءً على القيمة القادمة من السيرفر (deposit)
+                                    final isDeposit =
+                                        transaction["type"] == "deposit";
+
+                                    return Card(
+                                      elevation: 3,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(13),
+                                      ),
+                                      child: ListTile(
+                                        title: TextForm(
+                                          size: 30,
+                                          text: isDeposit ? "إيداع" : "سحب",
+                                          weight: FontWeight.bold,
+                                          align: TextAlign.right,
+                                          color: isDeposit
+                                              ? Colors.green
+                                              : Colors.red,
+                                        ),
+                                        leading: TextForm(
+                                          text: transaction['date'].toString(),
+                                          color: Colors.grey,
+                                        ),
+                                        subtitle: TextForm(
+                                          text: transaction['amount']
+                                              .toString(),
+                                          size: 20,
+                                          weight: FontWeight.w600,
+                                          align: TextAlign.right,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                 ],
               ),
             ),

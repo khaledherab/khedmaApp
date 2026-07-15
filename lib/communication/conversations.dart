@@ -74,8 +74,8 @@ class Conversation extends State<Conversations> {
                   padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: TextForm(
                     text: ispro
-                        ? "محادثاتك مع المهنيين"
-                        : "محادثاتك مع العملاء",
+                        ? "محادثاتك مع العملاء"
+                        : "محادثاتك مع المهنيين",
                     align: TextAlign.right,
                     color: Color(0xFF1976D2),
                     size: 16,

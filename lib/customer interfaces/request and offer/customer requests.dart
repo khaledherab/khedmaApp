@@ -18,16 +18,9 @@ class Request extends State<Requests> {
   @override
   void initState() {
     super.initState();
-    // fetch once when the page opens
-    Future.microtask(() => context.read<RequestsProvider>().fetchRequests());
-  }
 
-  // static const Color _navy = Color(0xFF0D47A1);
-  // static const Color _blue = Color(0xFF1976D2);
-  // static const Color _skyLight = Color(0xFFE3F2FD);
-  // static const Color _accent = Color(0xFF00B0FF);
-  // static const Color _green = Color(0xFF2E7D32);
-  // static const Color _cardShadow = Color(0x1A1976D2);
+    Future.microtask(() => context.read<RequestsProvider>().Requests());
+  }
 
   Widget buildRequestLayout(List<Map<String, dynamic>> requests) {
     return ListView.builder(
@@ -102,14 +95,39 @@ class Request extends State<Requests> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Icon(
-                          Icons.local_offer_rounded,
-                          color: Colors.white70,
-                          size: 28,
-                        ),
+                        // وضع شرط اذا ادرج المستخدم صورة مع الطلب تظهر هذه الصورة
+                        // واذا لم يدرج صورة تظهر ايقونة
+                        (request['photo_url'] != null &&
+                                request['photo_url'].toString().isNotEmpty)
+                            ? Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: Colors.white24),
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.network(
+                                    request['photo_url'],
+                                    fit: BoxFit.cover,
+                                    errorBuilder:
+                                        (context, error, stackTrace) => Icon(
+                                          Icons.broken_image,
+                                          color: Colors.white70,
+                                          size: 28,
+                                        ),
+                                  ),
+                                ),
+                              )
+                            : Icon(
+                                Icons.local_offer_rounded,
+                                color: Colors.white70,
+                                size: 28,
+                              ),
                         Gap(12),
                         TextForm(
-                          text: request['title'] ?? '',
+                          text: request['description'] ?? '',
                           align: TextAlign.right,
                           size: 22,
                           weight: FontWeight.bold,
@@ -120,7 +138,9 @@ class Request extends State<Requests> {
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             TextForm(
-                              text: request['date'] ?? '',
+                              text: request['created_at'] != null
+                                  ? request['created_at'].toString()
+                                  : '',
                               size: 16,
                               color: Colors.white70,
                             ),
@@ -149,7 +169,7 @@ class Request extends State<Requests> {
     final provider = context.watch<RequestsProvider>();
     return Scaffold(
       backgroundColor: AppColor.backgroundcolor,
-      // const Color(0xFFF0F4FF),
+
       appBar: AppBar(
         backgroundColor: Color(0xFF1976D2),
         automaticallyImplyLeading: false,

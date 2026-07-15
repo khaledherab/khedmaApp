@@ -27,13 +27,13 @@ class _EditProfileState extends State<EditProfile> {
   @override
   void initState() {
     super.initState();
-    final profile = context.read<ProfileProvider>().profile ?? {};
-    _name = TextEditingController(text: profile['name'] ?? '');
-    _location = TextEditingController(text: profile['location'] ?? '');
-    _phone = TextEditingController(text: profile['phone'] ?? '');
-    _email = TextEditingController(text: profile['email'] ?? '');
-    _description = TextEditingController(text: profile['description'] ?? '');
-    _experience = TextEditingController(text: profile['experience'] ?? '');
+    final user = context.read<ProfileProvider>().profile;
+    _name = TextEditingController(text: user?.name ?? '');
+    _location = TextEditingController(text: user?.location ?? '');
+    _phone = TextEditingController(text: user?.phone ?? '');
+    _email = TextEditingController(text: user?.email ?? '');
+    _description = TextEditingController(text: user?.description ?? '');
+    _experience = TextEditingController(text: user?.experience ?? '');
   }
 
   @override
@@ -47,9 +47,6 @@ class _EditProfileState extends State<EditProfile> {
     super.dispose();
   }
 
-  // ── Open image picker ────────────────────────────────────────────────────────
-  // Offers camera or gallery — role is passed to the service so Laravel
-  // saves the image in the correct folder (customers/ or professionals/)
   Future<void> pickImage() async {
     final provider = context.read<ProfileProvider>();
     // اختيار مصدر الصورة
@@ -89,17 +86,13 @@ class _EditProfileState extends State<EditProfile> {
 
     final XFile? picked = await _picker.pickImage(
       source: source,
-      imageQuality: 80, // ضغط خفيف لتقليلل حجم التحميل
-      maxWidth: 800,
+      imageQuality: 70, // ضغط خفيف لتقليل حجم التحميل
+      maxWidth: 600,
     );
     if (picked == null) return;
 
-    // للحفظ والتحمل محليا في التطبيق URLيقوم بحفظ ال  (provider)كلاس ال
-    // بالمكان الصحيح (laravel)يتم تمرير الدور مع الصورة حتى يحفظ
     await provider.pickAndUploadAvatar(File(picked.path));
-    // مهمة هذا السطر هي
-    // المستخدم عندما يختار صورة  فهي تأخذ وقتاً لرفعها على السيرفر
-    // اثناء الرفع اذا خرج المستخدم من الصفحة لا ترفع الصورة لحماية التطبيق من الانهيار
+
     if (!mounted) return;
     if (provider.errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -118,14 +111,19 @@ class _EditProfileState extends State<EditProfile> {
     final provider = context.read<ProfileProvider>();
     final bool isPro = provider.isProfessional;
 
-    await provider.updateProfile({
-      "name": _name.text,
-      "location": _location.text,
+    final Map<String, dynamic> dataToSend = {
+      "name": _name.text.trim(),
+      "location": _location.text.trim(),
       "phone": _phone.text.trim(),
       "email": _email.text.trim(),
-      if (isPro) "description": _description.text,
-      if (isPro) "experience": _experience.text,
-    });
+    };
+    if (isPro) {
+      dataToSend["category"] = provider.profile?.category ?? '';
+      dataToSend["bio"] = _description.text.trim();
+      dataToSend["experience_years"] = _experience.text.trim();
+    }
+
+    await provider.updateProfile(dataToSend);
 
     if (!mounted) return;
 
@@ -136,7 +134,7 @@ class _EditProfileState extends State<EditProfile> {
           backgroundColor: const Color(0xFF2E7D32),
         ),
       );
-      Navigator.of(context).pop();
+      Navigator.pop(context, true);
     } else if (provider.errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -208,17 +206,12 @@ class _EditProfileState extends State<EditProfile> {
                       CircleAvatar(
                         radius: 60,
                         backgroundColor: Color(0xFFBBDEFB),
-                        backgroundImage: provider.avatarFile != null
-                            ? FileImage(provider.avatarFile!)
+                        backgroundImage: provider.hasAvatar
+                            ? MemoryImage(provider.avatarBytes!)
                             : null,
-                        foregroundImage:
-                            provider.avatarFile == null &&
-                                provider.avatarUrl != null &&
-                                provider.avatarUrl!.isNotEmpty
-                            ? NetworkImage(provider.avatarUrl!)
-                            : null,
+
                         child: !provider.hasAvatar
-                            ? const Icon(
+                            ? Icon(
                                 Icons.person,
                                 size: 55,
                                 color: Color(0xFF1976D2),
@@ -274,7 +267,7 @@ class _EditProfileState extends State<EditProfile> {
                 ),
               ),
               Gap(24),
-              // ── Fields card ───────────────────────────────────────────────
+              //
               Container(
                 width: double.infinity,
                 padding: EdgeInsets.all(15),
@@ -423,145 +416,4 @@ class _EditProfileState extends State<EditProfile> {
       ),
     );
   }
-
-  // Widget label(String text, IconData icon) {
-  //   return Row(
-  //     mainAxisAlignment: MainAxisAlignment.end,
-  //     children: [
-  //       TextForm(
-  //         text: text,
-  //         size: 20,
-  //         weight: FontWeight.bold,
-  //         color:  Color.fromARGB(255, 59, 115, 160),
-  //       ),
-  //        Gap(6),
-  //       Icon(icon, color: const Color(0xFF1976D2), size: 18),
-  //     ],
-  //   );
-  // }
 }
-
-// import 'package:flutter/material.dart';
-// import 'package:gap/gap.dart';
-// import 'package:graduation_project/components/button%20form.dart';
-// import 'package:graduation_project/components/text%20form%20field.dart';
-// import 'package:graduation_project/components/text%20form.dart';
-
-// class EditeProfile extends StatefulWidget {
-//   const EditeProfile({super.key});
-
-//   @override
-//   State<EditeProfile> createState() => EditeprofileItems();
-// }
-
-// class EditeprofileItems extends State<EditeProfile> {
-//   final TextEditingController name = TextEditingController();
-//   final TextEditingController address = TextEditingController();
-//   final TextEditingController phone = TextEditingController();
-//   final TextEditingController email = TextEditingController();
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       backgroundColor: Colors.white,
-//       appBar: AppBar(
-//         automaticallyImplyLeading: false,
-//         centerTitle: true,
-//         backgroundColor: Colors.blue[400],
-//         title: TextForm(
-//           text: "تعديل الملف الشخصي",
-//           size: 30,
-//           weight: FontWeight.bold,
-//           color: Colors.blue[900],
-//         ),
-//         actions: [
-//           IconButton(
-//             padding: EdgeInsets.all(15),
-//             iconSize: 30,
-//             onPressed: () {
-//               Navigator.of(context).pop();
-//             },
-//             icon: Icon(Icons.arrow_forward_outlined),
-//           ),
-//         ],
-//       ),
-//       body: SingleChildScrollView(
-//         padding: EdgeInsets.all(10),
-//         child: Column(
-//           crossAxisAlignment: CrossAxisAlignment.end,
-//           children: [
-//             Gap(20),
-//             Center(
-//               child: Stack(
-//                 children: [
-//                   CircleAvatar(
-//                     radius: 60,
-//                     child: IconButton(
-//                       iconSize: 55,
-//                       onPressed: () {},
-//                       icon: Icon(Icons.person),
-//                     ),
-//                   ),
-//                   Positioned(
-//                     left: 60,
-//                     bottom: 0,
-//                     right: 0,
-//                     child: CircleAvatar(
-//                       radius: 18,
-//                       backgroundColor: Colors.white,
-//                       child: CircleAvatar(
-//                         radius: 16,
-//                         backgroundColor: Color.fromARGB(255, 59, 148, 220),
-//                         child: IconButton(
-//                           padding: EdgeInsets.zero,
-//                           onPressed: () {},
-//                           icon: Icon(
-//                             Icons.camera_alt,
-//                             size: 18,
-//                             color: Colors.white,
-//                           ),
-//                         ),
-//                       ),
-//                     ),
-//                   ),
-//                 ],
-//               ),
-//             ),
-//             Gap(30),
-//             TextForm(text: "الاسم", size: 30, weight: FontWeight.bold),
-//             Gap(10),
-//             CustomTextForm(hint: "", myController: name),
-//             Gap(7),
-//             TextForm(text: "الموقع", size: 30, weight: FontWeight.bold),
-//             Gap(10),
-//             CustomTextForm(hint: "", myController: address),
-//             Gap(7),
-//             TextForm(text: "رقم الهاتف", size: 30, weight: FontWeight.bold),
-//             Gap(10),
-//             CustomTextForm(hint: "", myController: phone),
-
-//             Gap(7),
-//             TextForm(
-//               text: "البريد الالكتروني",
-//               size: 30,
-//               weight: FontWeight.bold,
-//             ),
-//             Gap(10),
-//             CustomTextForm(hint: "", myController: email),
-//             Gap(20),
-
-//             Padding(
-//               padding: EdgeInsets.only(right: 18),
-//               child: ButtonForm(
-//                 onPressed: () {},
-//                 title: "حفظ التغيرات",
-//                 borderradius: BorderRadius.circular(16),
-//                 padding: EdgeInsets.symmetric(horizontal: 70),
-//               ),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }

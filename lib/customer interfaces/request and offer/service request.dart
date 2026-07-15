@@ -5,6 +5,7 @@ import 'package:gap/gap.dart';
 import 'package:graduation_project/components/button%20form.dart';
 import 'package:graduation_project/components/text%20form%20field.dart';
 import 'package:graduation_project/components/text%20form.dart';
+import 'package:graduation_project/providers/category_provider.dart';
 import 'package:graduation_project/providers/create_service_request_provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -30,6 +31,9 @@ class _ServiceRequest extends State<ServiceRequest> {
   @override
   void initState() {
     myProvider = context.read<ServiceRequestProvider>();
+    Future.microtask(() {
+      context.read<CategoryProvider>().loadCategories();
+    });
     super.initState();
   }
 
@@ -110,44 +114,60 @@ class _ServiceRequest extends State<ServiceRequest> {
     if (!_formKey.currentState!.validate()) return;
 
     final provider = context.read<ServiceRequestProvider>();
-
-    await provider.submitRequest(
-      category: categories.text,
-      address: address.text,
-      details: details.text,
+    final catprovider = context.read<CategoryProvider>();
+    final selectedCategory = catprovider.categories.firstWhere(
+      (cat) => cat.name == categories.text,
+      orElse: () => throw Exception("التصنيف المختار غير موجود"),
     );
 
-    if (!mounted) return;
+    try {
+      await provider.submitRequest(
+        categoryId: selectedCategory.id,
+        address: address.text,
+        details: details.text,
+      );
 
-    if (provider.isSuccess) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("تم إرسال الطلب بنجاح ✓"),
-          backgroundColor: Color(0xFF2E7D32),
-        ),
-      );
-      categories.clear();
-      address.clear();
-      details.clear();
-      setState(() => imageTouched = false);
-      Navigator.of(context).pop();
-    } else if (provider.errorMessage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(provider.errorMessage!),
-          backgroundColor: Colors.red[700],
-        ),
-      );
+      if (!mounted) return;
+
+      if (provider.isSuccess) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("تم إرسال الطلب بنجاح ✓"),
+            backgroundColor: Color(0xFF2E7D32),
+          ),
+        );
+        categories.clear();
+        address.clear();
+        details.clear();
+        setState(() => imageTouched = false);
+        Navigator.of(context).pop();
+      } else if (provider.errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(provider.errorMessage!),
+            backgroundColor: Colors.red[700],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("حدث خطأ: ${e.toString()}"),
+            backgroundColor: Colors.red[700],
+          ),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final catprovider = context.watch<CategoryProvider>();
     final provider = context.watch<ServiceRequestProvider>();
     return Scaffold(
       backgroundColor: Colors.white,
-      //
-      //const Color.fromARGB(255, 228, 236, 248)
+
       appBar: AppBar(
         automaticallyImplyLeading: false,
         centerTitle: true,
@@ -191,25 +211,11 @@ class _ServiceRequest extends State<ServiceRequest> {
                   Icons.arrow_drop_down,
                   color: Color.fromARGB(255, 59, 115, 160),
                 ),
-                enabled: true,
-                dropdownItems: [
-                  "كهرباء",
-                  "سباكة",
-                  "نجار",
-                  "حدادة",
-                  "دهان",
-                  "تبريد وتكييف",
-                  "تنظيف",
-                  "نقل اثاث",
-                  "تركيب كاميرات",
-                  "تنسيق حدائق",
-                  "تركيب انترنت",
-                  "نقل عام",
-                  "تعقيم",
-                  "غسيل سيارات",
-                  "تركيب زجاج",
-                  "بلاط",
-                ],
+                enabled:
+                    !catprovider.isLoading && catprovider.categories.isNotEmpty,
+                dropdownItems: catprovider.categories
+                    .map((c) => c.name)
+                    .toList(),
                 validator: (val) {
                   if (categories.text.isEmpty) {
                     return "يرجى اختيار التصنيف";
@@ -374,11 +380,6 @@ class _ServiceRequest extends State<ServiceRequest> {
                           ),
                         ),
                 ),
-                //  IconButton(
-                //   onPressed: () {},
-                //   icon: Icon(Icons.add_a_photo_outlined, size: 50),
-                //   color: const Color.fromARGB(255, 59, 115, 160),
-                // ),
               ),
               Gap(15),
               Center(
