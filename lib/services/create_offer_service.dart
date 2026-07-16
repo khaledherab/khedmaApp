@@ -1,5 +1,6 @@
 // لارسال تفاصيل العرض الى قاعدة البيانات
 
+import 'package:dio/dio.dart';
 import 'package:graduation_project/services/api_sercice.dart';
 
 class CreateOfferService {
@@ -11,11 +12,22 @@ class CreateOfferService {
     required String duration,
     required String price,
   }) async {
-    // الرابط الصحيح حسب الـ Postman
-    return await _apiService.post('service-requests/$requestId/offers', {
-      'description': details,
-      'duration': duration,
-      'price': price,
-    });
+    try {
+      return await _apiService.post('service-requests/$requestId/offers', {
+        'description': details,
+        'duration': duration,
+        'price': price,
+      });
+    } on DioException catch (e) {
+      if (e.response != null && e.response?.data is Map) {
+        final data = e.response?.data;
+        if (data.containsKey('message')) {
+          throw data['message'];
+        }
+      }
+      throw "حدث خطأ أثناء الاتصال بالخادم";
+    } catch (e) {
+      throw "حدث خطأ غير متوقع";
+    }
   }
 }

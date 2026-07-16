@@ -19,7 +19,7 @@ class Request extends State<Requests> {
   void initState() {
     super.initState();
 
-    Future.microtask(() => context.read<RequestsProvider>().Requests());
+    Future.microtask(() => context.read<RequestsProvider>().fetchRequests());
   }
 
   Widget buildRequestLayout(List<Map<String, dynamic>> requests) {

@@ -7,6 +7,7 @@ import 'package:graduation_project/components/text%20form.dart';
 import 'package:graduation_project/providers/coversation_provider.dart';
 import 'package:graduation_project/providers/profile_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Conversations extends StatefulWidget {
   @override
@@ -14,12 +15,21 @@ class Conversations extends StatefulWidget {
 }
 
 class Conversation extends State<Conversations> {
+  int? myId;
   @override
   void initState() {
     super.initState();
+    loadMyId();
     Future.microtask(
       () => context.read<ConversationsProvider>().fetchConversations(),
     );
+  }
+
+  Future<void> loadMyId() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      myId = prefs.getInt('current_user_id');
+    });
   }
 
   @override
@@ -99,10 +109,19 @@ class Conversation extends State<Conversations> {
     final int unread = conversation['unread_count'] ?? 0;
     final bool hasUnread = unread > 0;
 
+    final String otherName = (myId == conversation['customer_id'])
+        ? (conversation['professional_name'] ?? '')
+        : (conversation['customer_name'] ?? '');
     return GestureDetector(
       onTap: () {
         context.read<ConversationsProvider>().markConversationRead(
           conversation['id'],
+        );
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatPage(conversation: conversation),
+          ),
         );
 
         // open chat
@@ -163,7 +182,7 @@ class Conversation extends State<Conversations> {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           TextForm(
-                            text: conversation['other_person_name'] ?? '',
+                            text: otherName,
                             align: TextAlign.right,
                             size: 20,
                             weight: hasUnread

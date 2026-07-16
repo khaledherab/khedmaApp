@@ -92,7 +92,6 @@ class MyApp extends StatelessWidget {
         "otherinformation": (context) => Professional_Information(),
         "categories": (context) => Categories(),
         "emailverification": (context) => Verification(),
-
         "customerhomepage": (context) => CustomerHomePage(),
         "notification": (context) => Notificationpage(),
         "service_request": (context) => ServiceRequest(),

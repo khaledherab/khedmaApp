@@ -17,7 +17,6 @@ class CreateOfferProvider extends ChangeNotifier {
     required String price,
   }) async {
     isSubmitting = true;
-    isSuccess = false;
     errorMessage = null;
     notifyListeners();
 
@@ -32,7 +31,7 @@ class CreateOfferProvider extends ChangeNotifier {
       isSuccess = true;
       return true;
     } catch (e) {
-      errorMessage = "حدث خطأ أثناء إرسال العرض";
+      errorMessage = e.toString();
       return false;
     } finally {
       isSubmitting = false;

@@ -9,7 +9,9 @@ class DioClient {
       /// http://khedma.test/api
       /// http://10.44.122.133:80/api
       /// http://10.44.122.133:8000/api/
-      /// http://127.0.0.1:8000/api/ الجديد
+      /// http://127.0.0.1:8000/api/
+      ///  الخاص بالهاتف
+      /// http://192.168.137.160:8000/api/ لجوال محي الدين
       headers: {
         "Accept":
             "application/json", // شو صيغة البيانات يلي بدها ترجع من السيرفر (JSON)

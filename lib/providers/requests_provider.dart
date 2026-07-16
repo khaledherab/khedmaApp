@@ -11,7 +11,7 @@ class RequestsProvider extends ChangeNotifier {
   bool isLoading = false;
   String? errorMessage;
 
-  Future<void> Requests() async {
+  Future<void> fetchRequests() async {
     isLoading = true;
     errorMessage = null;
     notifyListeners();
@@ -31,11 +31,17 @@ class RequestsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateOffersCount(int requestId, int count) {
+  void decrementOfferCount(int requestId) {
     final index = requests.indexWhere((r) => r['request_id'] == requestId);
+
     if (index != -1) {
-      requests[index]['offers_count'] = count;
-      notifyListeners();
+      int currentCount =
+          int.tryParse(requests[index]['offers_count'].toString()) ?? 0;
+
+      if (currentCount > 0) {
+        requests[index]['offers_count'] = currentCount - 1;
+        notifyListeners();
+      }
     }
   }
 }

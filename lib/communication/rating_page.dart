@@ -3,18 +3,22 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:graduation_project/components/text%20form.dart';
+import 'package:graduation_project/providers/professional_provider.dart';
 import 'package:graduation_project/providers/rating_provider.dart';
 import 'package:graduation_project/providers/profile_provider.dart';
 import 'package:provider/provider.dart';
 
 class RatingPage extends StatefulWidget {
-  final int professionalId;
+  final int requestId;
   final String professionalName;
+  final int professionalId;
 
   const RatingPage({
     super.key,
-    required this.professionalId,
+
     required this.professionalName,
+    required this.requestId,
+    required this.professionalId,
   });
 
   @override
@@ -50,31 +54,17 @@ class _RatingPageState extends State<RatingPage> {
   }
 
   Future<void> submit() async {
-    final newAverage = await context.read<RatingProvider>().submitRating(
+    final success = await context.read<RatingProvider>().submitRating(
+      requestId: widget.requestId,
       professionalId: widget.professionalId,
+      profProvider: context.read<ProfessionalsProvider>(),
     );
 
     if (!mounted) return;
 
-    if (newAverage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            "تم إرسال تقييمك بنجاح. شكراً لك!",
-            textAlign: TextAlign.right,
-            style: TextStyle(fontSize: 14),
-          ),
-          backgroundColor: const Color(0xFF2E7D32),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          margin: EdgeInsets.all(12),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      await Future.delayed(Duration(seconds: 2));
-      if (mounted) Navigator.of(context).pop();
+    if (success) {
+      // إغلاق الصفحة بعد النجاح
+      Navigator.of(context).pop(true);
     }
   }
 
@@ -93,7 +83,7 @@ class _RatingPageState extends State<RatingPage> {
             ),
           ],
         ),
-        body: const Center(
+        body: Center(
           child: Text(
             "هذه الصفحة متاحة للمستخدمين فقط",
             style: TextStyle(fontSize: 16, color: Colors.grey),
@@ -133,7 +123,6 @@ class _RatingPageState extends State<RatingPage> {
           children: [
             const Gap(16),
 
-            // ── Professional info card
             Container(
               width: double.infinity,
               padding: EdgeInsets.all(20),

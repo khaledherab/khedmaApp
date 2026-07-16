@@ -24,8 +24,8 @@ class CreateOrLogin extends StatelessWidget {
               Gap(70),
               Container(
                 padding: EdgeInsets.all(15),
-                width: 370,
-                height: 400,
+                width: double.infinity,
+                height: 500,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.only(

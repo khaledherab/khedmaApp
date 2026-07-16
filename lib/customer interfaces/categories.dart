@@ -88,8 +88,9 @@ class _Categories extends State<Categories> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) =>
-                              ShowProfessionals(category: category.name),
+                          builder: (context) => ShowProfessionals(
+                            category: category.id.toString(),
+                          ),
                         ),
                       );
                     },

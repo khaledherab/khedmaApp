@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:graduation_project/components/app_states.dart';
 import 'package:graduation_project/components/text%20form.dart';
+import 'package:graduation_project/components/view_professional_rating.dart';
 import 'package:graduation_project/providers/professional_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -77,14 +78,16 @@ class _ShowProfessionalsState extends State<ShowProfessionals> {
   }
 
   Widget buildProfessionalCard(Map<String, dynamic> professional) {
-    final String name = professional['name'];
-    final String bio = professional['bio'];
-    final String rating = professional['average_rating'] != null
-        ? professional['average_rating'].toString()
-        : '4.5';
-    final String experience = professional['experience_years'] != null
-        ? "${professional['experience_years']} سنوات خبرة"
+    final String name = professional['name']?.toString() ?? 'بدون اسم';
+    final String bio = professional['bio']?.toString() ?? '';
+    final dynamic exp = professional['experience_years'];
+    final String experience = (exp != null && exp.toString().isNotEmpty)
+        ? "$exp سنوات خبرة"
         : "";
+    final dynamic rawRating = professional['average_rating'];
+    final double averageRating = (rawRating != null)
+        ? double.tryParse(rawRating.toString()) ?? 0.0
+        : 0.0;
     return Container(
       margin: EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
@@ -118,20 +121,10 @@ class _ShowProfessionalsState extends State<ShowProfessionals> {
                     Gap(10),
                     Row(
                       children: [
+                        ProfessionalRatingWidget(rating: averageRating),
                         Spacer(),
-                        TextForm(
-                          text: rating,
-                          weight: FontWeight.bold,
-                          size: 15,
-                        ),
-                        Gap(3),
-                        Icon(
-                          Icons.star_rounded,
-                          color: Colors.orange,
-                          size: 15,
-                        ),
-                        Gap(10),
-                        TextForm(text: experience, size: 15),
+                        if (experience.isNotEmpty)
+                          TextForm(text: experience, size: 15),
                       ],
                     ),
                   ],

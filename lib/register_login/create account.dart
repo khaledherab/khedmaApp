@@ -26,7 +26,7 @@ class Register extends State<RegisterAccount> {
     final provider = context.read<AuthProvider>();
 
     provider.clearError();
-    // if (!formkey.currentState!.validate()) return;//////////////////////////// الغاء التعليق عند الربط
+    if (!formkey.currentState!.validate()) return;
 
     provider.registerData.name = name.text;
     provider.registerData.email = email.text.trim();
@@ -37,16 +37,12 @@ class Register extends State<RegisterAccount> {
 
     if (success) {
       Navigator.of(context).pushNamed("registerinformation");
-      debugPrint("تم انشاء الحساب ================");
     } else {
-      debugPrint(
-        "حدث خطأ في انشاء الحساب , الخطأ في ال AuthProvider او في ال AuthRepo",
-      );
-      // Future.delayed(Duration(seconds: 2), () {
-      //   if (mounted) {
-      //     context.read<AuthProvider>().clearError();
-      //   }
-      // });
+      Future.delayed(Duration(seconds: 2), () {
+        if (mounted) {
+          context.read<AuthProvider>().clearError();
+        }
+      });
     }
   }
 
@@ -90,7 +86,7 @@ class Register extends State<RegisterAccount> {
                 Gap(40),
                 Container(
                   padding: EdgeInsets.all(15),
-                  width: 370,
+                  width: double.infinity,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.only(

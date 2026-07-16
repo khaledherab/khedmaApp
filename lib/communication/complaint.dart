@@ -6,11 +6,11 @@ import 'package:graduation_project/providers/complaint_provider.dart';
 import 'package:provider/provider.dart';
 
 class Complaint extends StatefulWidget {
-  final int reportedUserId;
+  final int requestId;
   final String reportedUserName;
   Complaint({
     super.key,
-    required this.reportedUserId,
+    required this.requestId,
     required this.reportedUserName,
   });
 
@@ -32,11 +32,11 @@ class _ComplaintState extends State<Complaint> {
 
   // ── Submit
   Future<void> _submit() async {
-    // if (!comkey.currentState!.validate()) return;//////////////////////
+    if (!comkey.currentState!.validate()) return;
 
     await context.read<ComplaintProvider>().submitComplaint(
-      complaintText: complaint.text.trim(),
-      reportedUserId: widget.reportedUserId,
+      message: complaint.text.trim(),
+      requestId: widget.requestId,
     );
 
     if (!mounted) return;
@@ -65,7 +65,6 @@ class _ComplaintState extends State<Complaint> {
         ),
       );
 
-      // اغلاق الصفحة تلقائياً بعد نجاح الارسال
       await Future.delayed(Duration(seconds: 2));
       if (mounted) Navigator.of(context).pop();
     }
@@ -135,7 +134,7 @@ class _ComplaintState extends State<Complaint> {
                     child: Text(
                       provider.errorMessage!,
                       textAlign: TextAlign.right,
-                      style: const TextStyle(color: Colors.red, fontSize: 14),
+                      style: TextStyle(color: Colors.red, fontSize: 14),
                     ),
                   ),
 

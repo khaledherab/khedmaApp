@@ -10,10 +10,9 @@ class ComplaintProvider extends ChangeNotifier {
   bool isSuccess = false;
   String? errorMessage;
 
-  // ── Submit complaint
   Future<void> submitComplaint({
-    required String complaintText,
-    required int reportedUserId,
+    required String message,
+    required int requestId,
   }) async {
     isSubmitting = true;
     isSuccess = false;
@@ -21,10 +20,7 @@ class ComplaintProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _service.submitComplaint(
-        complaintText: complaintText,
-        reportedUserId: reportedUserId,
-      );
+      await _service.submitComplaint(message: message, requestId: requestId);
       isSuccess = true;
     } catch (e) {
       errorMessage = "فشل إرسال الشكوى، حاول مجدداً";
@@ -35,7 +31,6 @@ class ComplaintProvider extends ChangeNotifier {
     }
   }
 
-  // ── Reset when page closes
   void reset() {
     isSubmitting = false;
     isSuccess = false;

@@ -2,6 +2,7 @@
 // يمكن للمهني رؤية تفاصيل الطلب و تقديم عرض له
 
 import 'package:flutter/material.dart';
+import 'package:graduation_project/processing/helper.dart';
 import 'package:graduation_project/services/professional_requests_service.dart';
 
 class ProfessionalRequestsProvider extends ChangeNotifier {
@@ -11,6 +12,7 @@ class ProfessionalRequestsProvider extends ChangeNotifier {
   Map<String, dynamic>? selected;
   bool isLoading = false;
   String? errorMessage;
+  String? token;
 
   Future<void> realRequests() async {
     isLoading = true;
@@ -18,6 +20,7 @@ class ProfessionalRequestsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      token = await PrefHelper.getToken();
       requests = await _service.getRequests();
     } catch (e) {
       errorMessage = "فشل تحميل الطلبات";

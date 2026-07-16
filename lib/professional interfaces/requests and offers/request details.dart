@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:graduation_project/components/button%20form.dart';
@@ -54,11 +55,20 @@ class RequestDetails extends StatelessWidget {
           if (order['photo'] != null)
             ClipRRect(
               borderRadius: BorderRadius.circular(20),
-              child: Image.network(
-                order['photo'],
+              child: CachedNetworkImage(
+                imageUrl: order['photo'],
                 width: double.infinity,
                 height: 230,
                 fit: BoxFit.cover,
+                httpHeaders: {
+                  'Authorization':
+                      'Bearer ${context.read<ProfessionalRequestsProvider>().token ?? ""}',
+                },
+                placeholder: (context, url) => Container(
+                  height: 230,
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                errorWidget: (context, url, error) => Icon(Icons.error),
               ),
             ),
 

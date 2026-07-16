@@ -5,6 +5,7 @@ import 'package:graduation_project/communication/rating_page.dart';
 import 'package:graduation_project/components/text%20form.dart';
 import 'package:graduation_project/providers/chat_provider.dart';
 import 'package:graduation_project/providers/coversation_provider.dart';
+import 'package:graduation_project/providers/profile_provider.dart';
 import 'package:provider/provider.dart';
 
 class ChatPage extends StatefulWidget {
@@ -18,14 +19,14 @@ class ChatPage extends StatefulWidget {
 class _ChatPageState extends State<ChatPage> {
   final TextEditingController _input = TextEditingController();
   final ScrollController _scroll = ScrollController();
+  late final int chatId;
 
   @override
   void initState() {
     super.initState();
-    Future.microtask(
-      () =>
-          context.read<ChatProvider>().fetchMessages(widget.conversation['id']),
-    );
+    chatId = widget.conversation['chat_id'] ?? widget.conversation['id'] ?? 0;
+    context.read<ChatProvider>().loadUserId();
+    Future.microtask(() => context.read<ChatProvider>().fetchMessages(chatId));
   }
 
   @override
@@ -55,29 +56,31 @@ class _ChatPageState extends State<ChatPage> {
     if (text.isEmpty) return;
     _input.clear();
 
-    await context.read<ChatProvider>().sendMessage(
-      conversationId: widget.conversation['id'],
+    final isSuccess = await context.read<ChatProvider>().sendMessage(
+      conversationId: chatId,
       content: text,
     );
 
-    // تحديث آخر رسالة في المحادثة -------------------
-    if (mounted) {
-      context.read<ConversationsProvider>().updateLastMessage(
-        widget.conversation['id'],
-        text,
-      );
+    if (isSuccess && mounted) {
+      context.read<ConversationsProvider>().updateLastMessage(chatId, text);
+      scrollToBottom();
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("فشل إرسال الرسالة، حاول مجدداً")));
     }
-
-    scrollToBottom();
   }
 
   @override
   Widget build(BuildContext context) {
+    final isProfessional = context.watch<ProfileProvider>().isProfessional;
     final provider = context.watch<ChatProvider>();
     final String otherName = widget.conversation['other_person_name'] ?? '';
-
+    final int otherPersonId = widget.conversation['other_person_id'] ?? 0;
     // scroll when messages update
-    if (!provider.isLoading) scrollToBottom();
+    if (!provider.isLoading && provider.messages.isNotEmpty) {
+      scrollToBottom();
+    }
 
     return Scaffold(
       backgroundColor: Color(0xFFE3F2FD),
@@ -95,9 +98,10 @@ class _ChatPageState extends State<ChatPage> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => Complaint(
-                      reportedUserId: widget.conversation['other_person_id'],
-                      reportedUserName:
-                          widget.conversation['other_person_name'] ?? '',
+                      requestId:
+                          widget.conversation['request_id'] ??
+                          widget.conversation['id'],
+                      reportedUserName: otherName,
                     ),
                   ),
                 );
@@ -117,36 +121,42 @@ class _ChatPageState extends State<ChatPage> {
             ),
           ),
           Gap(5),
-          SizedBox(
-            width: 75,
-            height: 40,
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => RatingPage(
-                      professionalId: widget.conversation['other_person_id'],
-                      professionalName:
-                          widget.conversation['other_person_name'] ?? '',
+          if (!isProfessional)
+            SizedBox(
+              width: 75,
+              height: 40,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => RatingPage(
+                        requestId:
+                            widget.conversation['request_id'] ??
+                            widget.conversation['id'] ??
+                            0,
+                        professionalName: otherName,
+                        professionalId:
+                            widget.conversation['professional_id'] ??
+                            otherPersonId,
+                      ),
                     ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue[400],
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadiusGeometry.circular(17),
                   ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[400],
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadiusGeometry.circular(17),
+                ),
+                child: TextForm(
+                  text: "تقييم",
+                  size: 16,
+                  weight: FontWeight.bold,
+                  color: Colors.white,
                 ),
               ),
-              child: TextForm(
-                text: "تقييم",
-                size: 16,
-                weight: FontWeight.bold,
-                color: Colors.white,
-              ),
             ),
-          ),
           Spacer(),
           TextForm(
             text: otherName,
@@ -165,6 +175,7 @@ class _ChatPageState extends State<ChatPage> {
               size: 22,
             ),
           ),
+
           IconButton(
             iconSize: 26,
             onPressed: () {
@@ -300,7 +311,7 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  // ── Message bubble ──────────────────────────────────────────────────────────
+  // ── Message bubble
   Widget buildBubble(Map<String, dynamic> msg) {
     final bool isMine = msg['is_mine'] == true;
     final bool isPending = msg['pending'] == true;
@@ -308,12 +319,12 @@ class _ChatPageState extends State<ChatPage> {
 
     return Align(
       // رسالتي على اليمين ورسالة الآخر على اليسار
-      alignment: isMine ? Alignment.centerLeft : Alignment.centerRight,
+      alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: EdgeInsets.only(bottom: 8),
         padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isMine ? Color(0xFF1976D2) : Colors.white,
+          color: isMine ? Colors.white : Color(0xFF1976D2),
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(18),
             topRight: Radius.circular(18),
@@ -340,7 +351,7 @@ class _ChatPageState extends State<ChatPage> {
               style: TextStyle(
                 fontSize: 15,
                 height: 1.4,
-                color: isMine ? Colors.white : Colors.black87,
+                color: isMine ? Colors.black87 : Colors.white,
               ),
             ),
             Gap(4),
@@ -397,12 +408,26 @@ class _ChatPageState extends State<ChatPage> {
 
   String formatDate(String? raw) {
     if (raw == null) return '';
-    return raw.split(' ').first;
+    try {
+      final DateTime dt = DateTime.parse(raw).toLocal();
+      return "${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}";
+    } catch (e) {
+      // كحل بديل في حال وجود صيغة مختلفة
+      return raw.split('T').first;
+    }
   }
 
   String formatTime(String? raw) {
     if (raw == null) return '';
-    final parts = raw.split(' ');
-    return parts.length > 1 ? parts[1] : raw;
+    try {
+      final DateTime dt = DateTime.parse(raw).toLocal();
+      return "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
+    } catch (e) {
+      // كحل بديل
+      if (raw.contains('T')) {
+        return raw.split('T').last.substring(0, 5);
+      }
+      return raw;
+    }
   }
 }

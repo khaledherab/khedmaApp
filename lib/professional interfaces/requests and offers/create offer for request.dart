@@ -52,7 +52,18 @@ class OfferDet extends State<CreateOfferForRequest> {
       duration: time.text.trim(),
       price: price.text.trim(),
     );
-    if (success && mounted) {
+
+    if (!success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            provider.errorMessage ?? "حدث خطأ أثناء إرسال العرض",
+            textAlign: TextAlign.right,
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } else if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -69,18 +80,6 @@ class OfferDet extends State<CreateOfferForRequest> {
       price.clear();
 
       Navigator.of(context).pop();
-    } else if (!success && mounted) {
-      // إظهار رسالة خطأ في حال فشل الإرسال لأي سبب
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            context.read<CreateOfferProvider>().errorMessage ??
-                "حدث خطأ أثناء إرسال العرض",
-            textAlign: TextAlign.right,
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
     }
   }
 

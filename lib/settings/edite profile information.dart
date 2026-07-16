@@ -326,6 +326,7 @@ class _EditProfileState extends State<EditProfile> {
                     CustomTextForm(
                       hint: "username@gmail.com",
                       myController: _email,
+                      enabled: true,
                       validator: (val) {
                         if (val == null || val.trim().isEmpty)
                           return "يرجى إدخال البريد الالكتروني";

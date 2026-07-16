@@ -41,22 +41,38 @@ class _OffersScreenState extends State<OffersScreen> {
       confirmBtnText: "تأكيد ",
       cancelBtnText: "إلغاء",
       confirmBtnColor: Color(0xFF1976D2),
-
       barrierDismissible: false,
       onConfirmBtnTap: () async {
-        Navigator.pop(context);
+        Navigator.pop(context); // إغلاق رسالة التأكيد
 
         try {
-          await provider.acceptOffer(
-            offer['offer_id'],
+          // 1. رفض العرض في الخادم
+          await provider.rejectOffer(offer['offer_id']);
+
+          if (!mounted) return;
+
+          // 2. إنقاص عدد العروض في صفحة الطلبات السابقة
+          context.read<RequestsProvider>().decrementOfferCount(
             widget.request['request_id'],
           );
+
+          // 3. التحديث المحلي السريع لعدد العروض المعروض في واجهة هذه الصفحة
+          setState(() {
+            int currentCount =
+                int.tryParse(widget.request['offers_count'].toString()) ?? 0;
+            if (currentCount > 0) {
+              widget.request['offers_count'] = currentCount - 1;
+            }
+          });
+
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text("تم رفض العرض بنجاح")));
         } catch (e) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(provider.errorMessage ?? "حدث خطأ ما")),
           );
         }
-        context.read<OffersProvider>().rejectOffer(offer['offer_id']);
       },
     );
   }
@@ -71,14 +87,15 @@ class _OffersScreenState extends State<OffersScreen> {
       type: QuickAlertType.confirm,
       title: "تأكيد القبول",
       text:
-          "هل تريد قبول عرض ${providerName}؟\nسيتم رفض جميع العروض الأخرى تلقائياً.",
+          "هل تريد قبول عرض $providerName؟\nسيتم إغلاق الطلب ورفض العروض الأخرى.",
       confirmBtnText: "قبول ",
       cancelBtnText: "إلغاء",
       confirmBtnColor: Color(0xFF2E7D32),
       barrierDismissible: false,
       onConfirmBtnTap: () async {
-        Navigator.pop(context); // اغلاق الرسالة بعد تأكيد القبول
+        Navigator.pop(context); // إغلاق رسالة تأكيد القبول
 
+        // 1. استدعاء API القبول من الخادم
         await context.read<OffersProvider>().acceptOffer(
           offer['offer_id'],
           widget.request['request_id'],
@@ -86,23 +103,25 @@ class _OffersScreenState extends State<OffersScreen> {
 
         if (!mounted) return;
 
-        // حذف الطلب من صفحة الطلبات -----------------
+        // 2. حذف الطلب نهائياً من صفحة الطلبات السابقة
         context.read<RequestsProvider>().removeRequest(
           widget.request['request_id'],
         );
 
+        // 3. إظهار رسالة النجاح والعودة للصفحة الرئيسية
         QuickAlert.show(
           context: context,
           type: QuickAlertType.success,
           title: "تم قبول العرض",
-          text:
-              "تم قبول العرض بنجاح.\nيمكنك الآن التواصل مع المهني عبر صفحة الدردشة.",
-          confirmBtnText: " اغلاق",
+          text: "تم قبول العرض بنجاح.\nيمكنك الآن التواصل مع المهني.",
+          confirmBtnText: "اغلاق",
           confirmBtnColor: Color(0xFF1976D2),
           barrierDismissible: false,
           onConfirmBtnTap: () {
-            Navigator.pop(context); // اغلاق الرسالة
-            Navigator.pop(context); // اغلاق صفحة العروض
+            Navigator.pop(context); // إغلاق رسالة النجاح
+            Navigator.pop(
+              context,
+            ); // إغلاق صفحة العروض تماماً والعودة لصفحة الطلبات
           },
         );
       },
@@ -335,7 +354,8 @@ class _OffersScreenState extends State<OffersScreen> {
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: TextForm(
-                              text: "${provider.offers.length} عروض",
+                              text:
+                                  "${widget.request['offers_count'] ?? 0} عروض",
                               color: Colors.white,
                               size: 14,
                               weight: FontWeight.bold,

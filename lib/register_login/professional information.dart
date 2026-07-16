@@ -117,7 +117,7 @@ class _Professional_Information extends State<Professional_Information> {
     // image is mandatory
     if (toolsimage == null) return;
 
-    // if (!formKey.currentState!.validate()) return;////////////
+    if (!formKey.currentState!.validate()) return;
     provider.registerData.categoryId = selectCategoryId;
     provider.registerData.experienceYears = yearexperence.text.trim();
     provider.registerData.description = description.text;
@@ -129,14 +129,7 @@ class _Professional_Information extends State<Professional_Information> {
     if (!mounted) return;
 
     if (success) {
-      debugPrint(
-        "تم انشاء حساب المهني بنجاح ==================== تقعيل الانتقال",
-      );
       Navigator.of(context).pushReplacementNamed("professionalhomepage");
-    } else {
-      debugPrint(
-        "حدث خطأ اثناء انشاء حشاب المهني , الخطأ في ال AuthProvider ال في ال AuthRepo=========================",
-      );
     }
   }
 
@@ -377,7 +370,6 @@ class _Professional_Information extends State<Professional_Information> {
                                 Text(
                                   "اضغط لإضافة صورة",
                                   style: TextStyle(
-                                    //////////////////////////////
                                     color: (submitted && toolsimage == null)
                                         ? Colors.red
                                         : Color.fromARGB(255, 59, 115, 160),
@@ -392,7 +384,7 @@ class _Professional_Information extends State<Professional_Information> {
                     Padding(
                       padding: EdgeInsets.only(top: 6, right: 4),
                       child: Text(
-                        "يرجى إضافة صورة الأدوات",
+                        "يرجى إضافة صورة الهوية",
                         style: TextStyle(color: Colors.red, fontSize: 12),
                       ),
                     ),

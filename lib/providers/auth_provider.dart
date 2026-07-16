@@ -7,6 +7,7 @@ import 'package:graduation_project/services/auth_repo_service.dart';
 import 'package:graduation_project/model/registration_madel.dart';
 import 'package:graduation_project/model/user_model.dart';
 import 'package:graduation_project/processing/helper.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthRepo _authRepo = AuthRepo();
@@ -100,6 +101,8 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       currentUser = await _authRepo.login(email, password);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('current_user_id', currentUser!.id);
 
       isLoading = false;
       notifyListeners();

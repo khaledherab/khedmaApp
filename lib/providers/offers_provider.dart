@@ -1,6 +1,7 @@
 // اظهار العروض للطلبات المناسبة
 import 'package:flutter/material.dart';
 import 'package:graduation_project/services/offers_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class OffersProvider extends ChangeNotifier {
   final OffersService _service = OffersService();
@@ -14,11 +15,20 @@ class OffersProvider extends ChangeNotifier {
 
   Future<void> showOffers(int requestId) async {
     isLoading = true;
-    errorMessage = null;
     notifyListeners();
 
     try {
-      offers = await _service.getOffersByRequest(requestId);
+      List<Map<String, dynamic>> allOffers = await _service.getOffersByRequest(
+        requestId,
+      );
+
+      final prefs = await SharedPreferences.getInstance();
+      List<String> rejectedIds = prefs.getStringList('rejected_offers') ?? [];
+
+      offers = allOffers.where((offer) {
+        return !rejectedIds.contains(offer['offer_id'].toString());
+      }).toList();
+
       acceptedOffer = null;
     } catch (e) {
       errorMessage = e.toString();
@@ -60,20 +70,23 @@ class OffersProvider extends ChangeNotifier {
   }
 
   Future<void> rejectOffer(int offerId) async {
-    isRejecting = true;
-    notifyListeners();
+    await _saveRejectedOfferId(offerId);
 
     offers.removeWhere((o) => o['offer_id'] == offerId);
     notifyListeners();
 
     try {
       await _service.rejectOffer(offerId);
-    } catch (_) {
-      errorMessage = "تعذّر إرسال الرفض للخادم";
-      notifyListeners();
-    } finally {
-      isRejecting = false;
-      notifyListeners();
+    } catch (_) {}
+  }
+
+  Future<void> _saveRejectedOfferId(int offerId) async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> rejectedIds = prefs.getStringList('rejected_offers') ?? [];
+
+    if (!rejectedIds.contains(offerId.toString())) {
+      rejectedIds.add(offerId.toString());
+      await prefs.setStringList('rejected_offers', rejectedIds);
     }
   }
 }

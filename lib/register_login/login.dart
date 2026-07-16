@@ -101,8 +101,8 @@ class _Login extends State<Login> {
                 Gap(40),
                 Container(
                   padding: EdgeInsets.all(15),
-                  width: 370,
-                  height: 450,
+                  width: double.infinity,
+                  height: 500,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.only(

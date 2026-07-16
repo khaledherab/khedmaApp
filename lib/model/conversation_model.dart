@@ -42,7 +42,7 @@ class ConversationModel {
 
     final List<dynamic> messages = json['messages'] as List<dynamic>? ?? [];
     final String lastMessage = messages.isNotEmpty
-        ? (messages.last['content'] as String? ?? '')
+        ? (messages.last['message'] as String? ?? '')
         : '';
 
     final String rawDate = json['updated_at'] as String? ?? '';

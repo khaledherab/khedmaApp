@@ -10,7 +10,6 @@ class ProfessionalRequestsService {
     final response = await _apiService.get('professional/requests');
 
     if (response != null && response['requests'] != null) {
-      // إرجاع قائمة الطلبات
       return List<Map<String, dynamic>>.from(response['requests']);
     }
 

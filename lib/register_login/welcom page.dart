@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import 'package:graduation_project/components/button%20form.dart';
 import 'package:graduation_project/components/text%20form.dart';
 import 'package:graduation_project/processing/helper.dart';
 import 'package:graduation_project/providers/profile_provider.dart';
@@ -16,37 +15,37 @@ class WelcomPage extends StatefulWidget {
 
 class _WelcomPageState extends State<WelcomPage> {
   bool _isLoading = false;
+  @override
+  initState() {
+    super.initState();
+
+    handleStartNow();
+  }
 
   Future<void> handleStartNow() async {
-    // إظهار مؤشر التحميل
     setState(() => _isLoading = true);
 
-    // البحث عن التوكن المحفوظ
     String? token = await PrefHelper.getToken();
 
     if (!mounted) return;
 
     if (token == null || token.isEmpty) {
-      // إذا لم يكن هناك حساب مسجل مسبقاً، نوجهه لصفحة انشاء حساب او تسجيل دخول
       Navigator.of(context).pushReplacementNamed("createorlogin");
       return;
     }
 
-    // إذا كان هناك توكن، نجلب بيانات الملف الشخصي لتحديد الدور
     final profileProvider = context.read<ProfileProvider>();
     final success = await profileProvider.realProfile();
 
     if (!mounted) return;
 
     if (success) {
-      // توجيه المستخدم بناءً على نوع حسابه
       if (profileProvider.isProfessional) {
         Navigator.of(context).pushReplacementNamed("professionalhomepage");
       } else {
         Navigator.of(context).pushReplacementNamed("customerhomepage");
       }
     } else {
-      // في حال فشل جلب البيانات (مثلاً التوكن انتهت صلاحيته)، نحذف التوكن ونوجهه للبداية
       await PrefHelper.clearToken();
       if (mounted) {
         Navigator.of(context).pushReplacementNamed("createorlogin");
@@ -83,15 +82,7 @@ class _WelcomPageState extends State<WelcomPage> {
                 ),
               ),
               Gap(40),
-
-              _isLoading
-                  ? CupertinoActivityIndicator(color: Colors.blue)
-                  : ButtonForm(
-                      padding: EdgeInsets.symmetric(horizontal: 110),
-                      borderradius: BorderRadiusGeometry.circular(20),
-                      onPressed: handleStartNow,
-                      title: "ابدأ الآن ",
-                    ),
+              if (_isLoading) CupertinoActivityIndicator(color: Colors.blue),
             ],
           ),
         ],

@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:graduation_project/components/app_states.dart';
@@ -26,6 +27,22 @@ class Requests extends State<Requests_at_the_Professional> {
   }
 
   Widget buildRequestCard(Map<String, dynamic> request) {
+    String imageUrl = request['photo'] ?? '';
+    //////////////////////////////////////
+    if (imageUrl.isNotEmpty) {
+      if (imageUrl.startsWith('http')) {
+        // إذا كان الرابط كاملاً ولكنه يحتوي على localhost أو 127.0.0.1 (للبيانات القديمة في الداتابيز)
+        // نقوم باستبداله تلقائياً بالـ IP الجديد ليعمل على الهاتف الحقيقي بدون مشاكل
+        imageUrl = imageUrl
+            .replaceAll('127.0.0.1', '192.168.137.160')
+            .replaceAll('localhost', '192.168.137.160');
+      } else {
+        // إذا كان السيرفر يرسل مجرد مسار نسبي (مثل service_requests/name.jpg)، نقوم بتركيبه هنا
+        imageUrl = "http://192.168.137.160:8000/storage/$imageUrl";
+      }
+    }
+
+    debugPrint("🔗 رابط الصورة الفعلي هو: $imageUrl");
     return Container(
       margin: EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -35,16 +52,26 @@ class Requests extends State<Requests_at_the_Professional> {
       child: Column(
         children: [
           //  يتم عرض الصورة فقط إذا كانت موجودة
-          if (request['photo'] != null)
+          if (imageUrl.isNotEmpty)
             ClipRRect(
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(20),
               ),
-              child: Image.network(
-                request['photo'], // المفتاح الصحيح من الـ API
+              child: CachedNetworkImage(
+                imageUrl: imageUrl,
                 height: 160,
                 width: double.infinity,
                 fit: BoxFit.cover,
+
+                httpHeaders: {
+                  'Authorization':
+                      'Bearer ${context.read<ProfessionalRequestsProvider>().token ?? ""}',
+                },
+                placeholder: (context, url) => Container(
+                  height: 160,
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                errorWidget: (context, url, error) => Icon(Icons.error),
               ),
             ),
 
